@@ -1,3 +1,5 @@
+import os.path as osp
+
 # Modify the empty string so that it contains your own GCS service account key.
 GCS_SERVICE_ACCOUNT_KEY = ''
 
