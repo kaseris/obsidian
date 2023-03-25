@@ -1,3 +1,5 @@
+from typing import Callable
+
 class Registry:
     """
     Factory class for creating modules.
