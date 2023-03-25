@@ -1,4 +1,5 @@
-GCS_SERVICE_ACCOUNT_KEY = 'concise-isotope-381417-76b805e29be0.json'
+# Modify the empty string so that it contains your own GCS service account key.
+GCS_SERVICE_ACCOUNT_KEY = ''
 
 DEEP_FASHION_LOW_RES_URL = 'https://storage.googleapis.com/deep-fashion-bucket/img.zip'
 DEEP_FASHION_HI_RES_URL = None
