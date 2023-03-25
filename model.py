@@ -13,18 +13,38 @@ CLS_HEADS = Registry()
 
 @BACKBONES.register('resnet_18')
 def resnet_18():
+    """
+    Returns a ResNet18 instance pretrained on ImageNet.
+    """
     return models.resnet18(weights=torchvision.models.ResNet18_Weights.IMAGENET1K_V1)
 
 @BACKBONES.register('resnet_50')
 def resnet_50():
+    """
+    Returns a ResNet50 instance pretrained on ImageNet.
+    """
     return models.resnet50(weights=torchvision.models.ResNet50_Weights.IMAGENET1K_V2)
 
 @BACKBONES.register('vit_b_16')
 def vit_b_16():
+    """
+    Returns a vision transformer (ViT) instance pretrained on ImageNet.
+    """
     return models.vit_b_16(weights=torchvision.models.ViT_B_16_Weights.DEFAULT)
 
 @CLS_HEADS.register('linear')
 def linear_cls_head(fan_in, embedding_sz, num_classes):
+    """
+    Returns a linear classification head composed of two fully connected layers with ReLU activation in between.
+
+    Args:
+        fan_in (int): The number of input features.
+        embedding_sz (int): The size of the embedding layer.
+        num_classes (int): The number of output classes.
+
+    Returns:
+        List[nn.Module]: A list of the fully connected layers and ReLU activation layer.
+    """
     return [nn.Linear(fan_in, embedding_sz),
             nn.ReLU(),
             nn.Linear(embedding_sz, num_classes)]
@@ -111,8 +131,9 @@ class ResNetDeepFashion(nn.Module):
         A tuple containing the output tensor of the ResNet backbone and the
         output tensor of the classification head.
         """
-        pass
+        return self.resnet(x)
     
 if __name__ == '__main__':
     model = ResNetDeepFashion(backbone='resnet_18', cls_head_type='linear', embedding_sz=512)
+    
             
