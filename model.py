@@ -48,7 +48,14 @@ class ResNetDeepFashion(nn.Module):
         The type of classification head to use, e.g. "linear".
     embedding_sz : int
         The size of the output embeddings.
-        
+
+    Methods:
+    --------
+    forward(x: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
+        Forward pass of the ResNetDeepFashion model.
+
+    freeze_weights():
+        Freezes the weights of the layers up to `self.resnet.fc`.
     """
     def __init__(self,
                  backbone: str,
@@ -80,10 +87,32 @@ class ResNetDeepFashion(nn.Module):
         self.resnet.fc = nn.Sequential(*CLS_HEADS[self.cls_head_type](num_features,
                                                                       self.embedding_sz,
                                                                       config.DEEP_FASHION_N_CLASSES))
-        
-    def forward(self):
+    
+    def freeze_weights(self):
+        """
+        Freezes the weights of the layers up to `self.resnet.fc`.
+        """
+        for param in self.resnet.parameters():
+            param.requires_grad = False
+            if param is self.resnet.fc.weight:
+                break
+    
+    def forward(self, x: torch.Tensor):
+        """
+        Forward pass of the ResNetDeepFashion model.
+
+        Args:
+        ----------
+        x : torch.Tensor
+            The input tensor of shape (batch_size, num_channels, height, width).
+
+        Returns:
+        ----------
+        A tuple containing the output tensor of the ResNet backbone and the
+        output tensor of the classification head.
+        """
         pass
     
 if __name__ == '__main__':
     model = ResNetDeepFashion(backbone='resnet_18', cls_head_type='linear', embedding_sz=512)
-    print(model)
+            
