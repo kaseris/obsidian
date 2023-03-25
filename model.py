@@ -92,10 +92,10 @@ class ResNetDeepFashion(nn.Module):
         """
         Freezes the weights of the layers up to `self.resnet.fc`.
         """
-        for param in self.resnet.parameters():
-            param.requires_grad = False
-            if param is self.resnet.fc.weight:
+        for name, param in self.resnet.named_parameters():
+            if 'fc' in name:
                 break
+            param.requires_grad = False
     
     def forward(self, x: torch.Tensor):
         """
