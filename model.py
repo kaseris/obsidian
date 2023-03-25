@@ -133,7 +133,3 @@ class ResNetDeepFashion(nn.Module):
         """
         return self.resnet(x)
     
-if __name__ == '__main__':
-    model = ResNetDeepFashion(backbone='resnet_18', cls_head_type='linear', embedding_sz=512)
-    
-            
