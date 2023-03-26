@@ -31,9 +31,9 @@ def deepfashion_default_transform():
     - A `transforms.Compose` object that can be passed to a PyTorch `DataLoader` object.
 
     Example:
-    ```
+    ```    
     transform = deepfashion_default_transform()
-    dataset = DeepFashionDataset('path/to/data', transform=transform)
+    dataset = DeepFashionCategoryAttribute(include_attributes=include_attributes, transform=transform)
     dataloader = DataLoader(dataset, batch_size=32, shuffle=True)
     ```
     """
