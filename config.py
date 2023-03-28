@@ -8,7 +8,7 @@ DEEP_FASHION_HI_RES_URL = None
 
 DEEP_FASHION_N_CLASSES = 50
 
-DEEP_FASHION_DIR = osp.join(osp.expanduser('~'), 'Documents', 'dev', 'DeepFashion')
+DEEP_FASHION_DIR = 'DeepFashion'
 DEEP_FASHION_CLOTHING_ANNOS_DIR = osp.join(DEEP_FASHION_DIR, 'Anno_coarse')
 DEEP_FASHION_CLOTHING_IMAGES_DIR = osp.join(DEEP_FASHION_DIR, 'img')
 DEEP_FASHION_CLOTHING_CATEGORIES_PATH = osp.join(DEEP_FASHION_CLOTHING_ANNOS_DIR, 'list_category_cloth.txt')
