@@ -4,6 +4,7 @@ import os.path as osp
 GCS_SERVICE_ACCOUNT_KEY = ''
 
 DEEP_FASHION_LOW_RES_URL = 'https://storage.googleapis.com/deep-fashion-bucket/img.zip'
+DEEP_FASHION_BASE_DIR_URL = 'https://storage.googleapis.com/deep-fashion-bucket/DeepFashion.zip'
 DEEP_FASHION_HI_RES_URL = None
 
 DEEP_FASHION_N_CLASSES = 50
