@@ -132,20 +132,16 @@ class ResNetDeepFashion(nn.Module):
     
     def freeze_weights(self):
         """
-        Freezes the weights of the layers up to `self.resnet.fc`.
+        Freezes the weights of the `backbone`'s layers.
         """
-        for name, param in self.resnet.named_parameters():
-            if 'fc' in name:
-                break
+        for name, param in self.backbone.named_parameters():
             param.requires_grad = False
             
     def unfreeze_weights(self):
         """
-        Freezes the weights of the layers up to `self.resnet.fc`.
+        Unfreezes the weights of the `backbone`'s layers.
         """
-        for name, param in self.resnet.named_parameters():
-            if 'fc' in name:
-                break
+        for name, param in self.backbone.named_parameters():
             param.requires_grad = True
     
     def forward(self, x: torch.Tensor, targets: Optional[torch.Tensor] = None) -> Tuple[torch.Tensor, torch.Tensor, Optional[torch.Tensor]]:
