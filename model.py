@@ -155,9 +155,9 @@ class ResNetDeepFashion(nn.Module):
                 output tensor of the classification head and the classification loss.
 
         Returns:
-            A tuple containing the output tensor of the ResNet backbone, the output tensor of the classification head
-            and the classification loss if targets is not None, otherwise only the output tensor of the ResNet backbone
-            and the output tensor of the classification head.
+            A tuple containing the embeddings tensor of the Classification head layer, the output tensor of the classification head
+            and the classification loss if targets is not None, otherwise only the embedings of the `cls_head`
+            and the output tensor of the classification head. The loss is set to `None` in this case.
         """
         out = self.backbone(x)
         preds, embeddings = self.cls_head(out)
@@ -165,6 +165,6 @@ class ResNetDeepFashion(nn.Module):
         loss = None
         if targets is not None:
             loss = F.cross_entropy(preds, target=targets)
-            return out, preds, loss
-        return out, preds, loss
+            return preds, embeddings, loss
+        return preds, embeddings, loss
     
