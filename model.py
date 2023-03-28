@@ -61,7 +61,6 @@ class LinearClassificationHead(nn.Module):
         
     def forward(self, x):
         embedding = self.embedding(x.squeeze())
-        embedding = self.act(embedding)
         out_cls = self.cls_head(embedding)
         return out_cls, embedding
 
