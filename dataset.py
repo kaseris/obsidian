@@ -145,7 +145,7 @@ class DeepFashionCategoryAttribute(Dataset):
         img_cropped = img.crop(crop)
         img_transformed = self.transforms(img_cropped)
         return_dict = {'img': img_transformed,
-                       'category': F.one_hot(torch.tensor(self.DATA_DICT[index]['cat_index'] - 1), num_classes=len(self.CLASS_LABELS))}
+                       'category': torch.tensor(self.DATA_DICT[index]['category'], dtype=torch.float)}
         if self.include_attributes:
             attributes = list(map(int, [el if el != '' else '-1' for el in self.DATA_DICT[index]['attributes']]))
             attributes = torch.clamp(torch.tensor(attributes), 0, 1)
