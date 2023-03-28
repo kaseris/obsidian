@@ -159,9 +159,9 @@ class ResNetDeepFashion(nn.Module):
             and the classification loss if targets is not None, otherwise only the embedings of the `cls_head`
             and the output tensor of the classification head. The loss is set to `None` in this case.
         """
-        out = self.backbone(x)
+        with torch.no_grad():
+            out = self.backbone(x)
         preds, embeddings = self.cls_head(out)
-        preds = F.softmax(preds, dim=1)
         loss = None
         if targets is not None:
             loss = F.cross_entropy(preds, target=targets)
