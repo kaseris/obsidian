@@ -48,43 +48,74 @@ def deepfashion_default_transform():
 @DATASETS.register('deepfashion_cat_att')
 class DeepFashionCategoryAttribute(Dataset):
     """
-    PyTorch Dataset class for the DeepFashion dataset for category and attribute classification task.
+    A PyTorch dataset for DeepFashion category and attribute classification.
 
     Args:
-        include_attributes (bool): Whether to include attribute labels in the dataset (default: False).
+        data_dir (str, optional): The directory containing the DeepFashion dataset. Defaults to `config.DEEP_FASHION_DIR`.
+        include_attributes (bool, optional): Whether to include attribute labels in the output. Defaults to `False`.
+        transforms (callable, optional): A function or callable object that applies transforms to input images. Defaults to `TRANSFORMS['DeepFashion_default']()`.
+        split_type (str, optional): The type of split to use (`'train'`, `'val'`, or `'test'`). Defaults to `'train'`.
+        split_info (dict, optional): A dictionary containing information about the dataset split. Defaults to `None`.
+        garment_annotations (dict, optional): A dictionary containing annotations for each image in the dataset. Defaults to `None`.
 
     Attributes:
-        data_dir (str): Path to the DeepFashion dataset directory.
-        CLASS_LABELS (List[str]): List of class labels.
-        ATTR_LABELS (List[str]): List of attribute labels.
-        IDX_TO_CLASS (Dict[int, str]): Dictionary mapping class index to class label.
-        CLS_TO_IDX (Dict[str, int]): Dictionary mapping class label to class index.
-        DATA_DICT (Dict[int, Dict[str, Union[str, int, List[int]]]]): Dictionary containing information
-            about each image in the dataset. The keys are the indices and the values are another dictionary
-            containing the keys "path", "cat_index", "category", and "attributes" (if include_attributes is True).
+        classes (list): A list of class labels for the dataset.
+        n_classes (int): The number of classes in the dataset.
 
     Methods:
-        __len__(): Returns the number of images in the dataset.
-        __getitem__(index: int) -> Dict[str, Union[str, int, List[int]]]: Returns a dictionary containing
-            information about the image at the given index. The dictionary contains the keys "path", "cat_index",
-            "category", and "attributes" (if include_attributes is True).
+        __init__(self, data_dir=config.DEEP_FASHION_DIR, include_attributes=False, transforms=None, split_type='train', split_info=None, garment_annotations=None):
+            Initializes a new `DeepFashionCategoryAttribute` dataset.
+            
+        __len__(self):
+            Returns the number of items in the dataset.
+            
+        __getitem__(self, index) -> Dict[torch.TensorType, torch.TensorType]:
+            Returns the item at the specified index.
+            
+        classes(self):
+            Returns a list of class labels for the dataset.
+            
+        n_classes(self):
+            Returns the number of classes in the dataset.
     Example:
     ```
-    from dataset import DeepFashionCategoryAttribute, TRANSFORMS
+    from torch.utils.data import DataLoader
+    from torchvision.transforms import Compose, Resize, CenterCrop, ToTensor
+    from dataset import DeepFashionCategoryAttribute
+    
+    from utils import prepare_data()
 
-    # create an instance of the dataset
-    dataset = DeepFashionCategoryAttribute(include_attributes=True,
-                                        transforms=TRANSFORMS['DeepFashion_default']())
+    # Define the transforms to be applied to each image
+    transforms = Compose([
+        Resize(256),
+        CenterCrop(224),
+        ToTensor()
+    ])
+    splits, garment_annotations = prepare_data()
+    # Load the dataset
+    dataset = DeepFashionCategoryAttribute(
+        data_dir='path/to/dataset',
+        include_attributes=True,
+        transforms=transforms,
+        split_type='train',
+        split_info=splits,
+        garment_annotations=garment_annotations
+    )
 
-    # get information about the first image in the dataset
-    sample = dataset[0]
+    # Create a DataLoader to handle batching and shuffling of the data
+    dataloader = DataLoader(
+        dataset,
+        batch_size=32,
+        shuffle=True
+    )
 
-    # print the shape of the transformed image tensor and attribute tensor
-    print(sample['img'].shape)
-    print(sample['attributes'].shape)
+    # Iterate over the data
+    for batch in dataloader:
+        images = batch['img']
+        categories = batch['category']
+        attributes = batch['attributes']
     ```
     """
-
     def __init__(self,
                  data_dir=config.DEEP_FASHION_DIR,
                  include_attributes=False,
@@ -140,4 +171,12 @@ class DeepFashionCategoryAttribute(Dataset):
             attributes = torch.clamp(torch.tensor(attributes), 0, 1)
             return_dict['attributes'] = attributes        
         return return_dict
+    
+    @property
+    def classes(self):
+        return self.CLASS_LABELS
+    
+    @property
+    def n_classes(self):
+        return len(self.CLASS_LABELS)
     
