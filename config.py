@@ -18,7 +18,7 @@ DEEP_FASHION_CLOTHING_LIST_CAT_IMG_PATH = osp.join(DEEP_FASHION_CLOTHING_ANNOS_D
 DEEP_FASHION_CLOTHING_LIST_ATT_IMG_PATH = osp.join(DEEP_FASHION_CLOTHING_ANNOS_DIR, 'list_attr_img.txt')
 DEEP_FASHION_CLOTHING_LIST_BBOX_IMG_PATH = osp.join(DEEP_FASHION_CLOTHING_ANNOS_DIR, 'list_bbox.txt')
 DEEP_FASHION_EVAL_DIR = osp.join(DEEP_FASHION_DIR, 'Eval')
-DEEP_FASHION_SPITS_PATH = osp.join(DEEP_FASHION_EVAL_DIR, 'list_eval_partition.txt')
+DEEP_FASHION_SPLITS_PATH = osp.join(DEEP_FASHION_EVAL_DIR, 'list_eval_partition.txt')
 
 # Will need to pass these parameters to a separate file. Will do, for now
 IMG_SIZE = 256
