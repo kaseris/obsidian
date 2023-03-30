@@ -83,7 +83,7 @@ class DeepFashionCategoryAttribute(Dataset):
     from torchvision.transforms import Compose, Resize, CenterCrop, ToTensor
     from dataset import DeepFashionCategoryAttribute
     
-    from utils import prepare_data()
+    from utils import prepare_data
 
     # Define the transforms to be applied to each image
     transforms = Compose([
