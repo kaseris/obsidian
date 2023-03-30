@@ -164,8 +164,9 @@ class DeepFashionCategoryAttribute(Dataset):
         crop = self.annos[pth]['bbox']
         img_cropped = img.crop(crop)
         img_transformed = self.transforms(img_cropped)
+        cat = self.annos[pth]['category']
         return_dict = {'img': img_transformed,
-                       'category': torch.tensor([self.annos[pth]['category']])}
+                       'category': torch.tensor([cat])}
         if self.include_attributes:
             attributes = self.annos[pth]['attributes']
             attributes = torch.clamp(torch.tensor(attributes), 0, 1)
