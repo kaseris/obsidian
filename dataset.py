@@ -159,8 +159,10 @@ class DeepFashionCategoryAttribute(Dataset):
     def __getitem__(self, index) -> Dict[torch.TensorType,
                                          torch.TensorType]:
         pth = self.split[index]
-        
-        img = Image.open(osp.join(self.data_dir, pth)).convert('RGB')
+        try:
+            img = Image.open(osp.join(self.data_dir, pth)).convert('RGB')
+        except FileNotFoundError:
+            img = Image.open(osp.join(self.data_dir, pth.replace('A-Line_Dress', 'A-line_Dress'))).convert('RGB')
         crop = self.annos[pth]['bbox']
         img_cropped = img.crop(crop)
         img_transformed = self.transforms(img_cropped)
