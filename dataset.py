@@ -15,7 +15,8 @@ from registry import Registry
 DATASETS = Registry()
 TRANSFORMS = Registry()
 
-@TRANSFORMS.register('DeepFashion_default')
+
+@TRANSFORMS.register('DeepFashion_default_tf')
 def deepfashion_default_transform():
     """
     Returns a set of image transforms commonly used for training DeepFashion datasets.
@@ -44,6 +45,35 @@ def deepfashion_default_transform():
         transforms.ToTensor(),
         transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
     ])
+
+@TRANSFORMS.register('DeepFashion_validation_tf')
+def deepfashion_validation_transform():
+    """
+    Returns a set of image transforms commonly used for validating DeepFashion datasets.
+
+    The transforms include:
+    - Resizing the image to the size specified in the `config` module.
+    - Randomly cropping a portion of the image to the size specified in the `config` module.
+    - Converting the image to a PyTorch tensor.
+    - Normalizing the image using the mean and standard deviation values provided in the torchvision documentation.
+
+    Returns:
+    - A `transforms.Compose` object that can be passed to a PyTorch `DataLoader` object.
+
+    Example:
+    ```    
+    transform = deepfashion_validation_transform()
+    dataset = DeepFashionCategoryAttribute(include_attributes=include_attributes, transform=transform)
+    dataloader = DataLoader(dataset, batch_size=32, shuffle=True)
+    ```
+    """
+    return transforms.Compose([
+        transforms.Resize(config.IMG_SIZE),
+        transforms.RandomCrop(config.CROP_SIZE),
+        transforms.ToTensor(),
+        transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+    ])
+    
     
 @DATASETS.register('deepfashion_cat_att')
 class DeepFashionCategoryAttribute(Dataset):
