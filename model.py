@@ -42,7 +42,7 @@ class ClassificationHead(nn.Module):
     def __init__(self, fan_in: int,
                  embedding_sz: int,
                  n_classes: int) -> None:
-        super(LinearClassificationHead, self).__init__()
+        super(ClassificationHead, self).__init__()
         self.embedding_sz = embedding_sz
         self.cls_head = nn.Linear(in_features=fan_in,
                                   out_features=n_classes)
