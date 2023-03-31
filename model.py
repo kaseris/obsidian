@@ -1,3 +1,4 @@
+from abc import ABC, abstractmethod
 from typing import Union, Tuple, Optional
 
 import torch
@@ -35,6 +36,23 @@ def vit_b_16():
     """
     return models.vit_b_16(weights=torchvision.models.ViT_B_16_Weights.DEFAULT)
 
+
+@CLS_HEADS.register('simple')
+class ClassificationHead(nn.Module):
+    def __init__(self, fan_in: int,
+                 embedding_sz: int,
+                 n_classes: int) -> None:
+        super(LinearClassificationHead, self).__init__()
+        self.embedding_sz = embedding_sz
+        self.cls_head = nn.Linear(in_features=fan_in,
+                                  out_features=n_classes)
+
+    def forward(self, x):
+        embedding = x
+        out_cls = self.cls_head(embedding)
+        return out_cls, embedding
+    
+
 @CLS_HEADS.register('linear')
 class LinearClassificationHead(nn.Module):
     """
@@ -64,8 +82,22 @@ class LinearClassificationHead(nn.Module):
         out_cls = self.cls_head(embedding)
         return out_cls, embedding
 
+class FashionModel(ABC, nn.Module):
+    @abstractmethod
+    def forward(self, x):
+        pass
+    
+    @abstractmethod
+    def training_step(self, x, y):
+        pass
+    
+    @abstractmethod
+    def validation_step(self, x, y):
+        pass
+
+
 @MODELS.register('ResNetDeepFashion')
-class ResNetDeepFashion(nn.Module):
+class ResNetDeepFashion(FashionModel):
     """
     A class that defines the ResNetDeepFashion model.
 
