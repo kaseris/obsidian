@@ -144,11 +144,46 @@ class ResNetDeepFashion(nn.Module):
             param.requires_grad = True
     
     def configure_optimizer(self, optimizer: torch.optim.Optimizer):
+        """
+        Configure the optimizer used during training.
+
+        Args:
+            optimizer (torch.optim.Optimizer): The optimizer to use for training.
+
+        Returns:
+            None
+            
+        Examples:
+        ```
+            >>> model = ResNetDeepFashion()
+            >>> optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
+            >>> model.configure_optimizer(optimizer)
+        ```
+        """
         self.optimizer = optimizer
         
     def training_step(self, x: torch.Tensor,
-                      targets: torch.Tensor,
-                      calculate_topk_accuracy=False):
+                      targets: torch.Tensor):
+        """
+            Performs a single training step on a batch of input data and targets.
+    
+        Args:
+            x (torch.Tensor): Input data tensor of shape (batch_size, num_channels, height, width).
+            targets (torch.Tensor): Target tensor of shape (batch_size) containing integer class labels.
+        
+        Returns:
+            dict: A dictionary containing the training accuracy and loss for the batch.
+                - train_acc (float): The training accuracy for the batch as a percentage.
+                - train_loss (float): The training loss for the batch.
+                
+        Raises:
+            ValueError: If the `targets` tensor has more than one dimension.
+        
+        This method first checks if the `targets` tensor has more than one dimension, and if so, it squeezes it down to one dimension.
+        It then passes the input data and targets to the model to obtain logits and loss, and computes the training accuracy as the percentage of correct predictions.
+        The model's optimizer is then zeroed, the loss is backpropagated through the network, and the optimizer is stepped forward.
+        The method returns a dictionary containing the training accuracy and loss for the batch.
+        """
         # Cross-entropy loss requires 0-D or 1-D target inputs.
         if targets.ndim > 1:
             targets = targets.squeeze()
@@ -157,8 +192,6 @@ class ResNetDeepFashion(nn.Module):
         targets_cpu = targets.to('cpu')
         predictions = torch.argmax(logits_cpu, dim=1)
         train_accuracy = torch.sum(predictions == targets_cpu) / len(targets_cpu)
-        if calculate_topk_accuracy:
-            pass
         
         self.optimizer.zero_grad()
         loss.backward()
@@ -167,8 +200,23 @@ class ResNetDeepFashion(nn.Module):
         return {'train_acc': train_accuracy.item(),
                 'train_loss': loss.item()}
         
+    @torch.no_grad()    
     def validation_step(self, x_val: torch.Tensor,
                         targets_val: torch.Tensor):
+        """
+        Performs a single validation step on a batch of input data `x_val` with associated targets `targets_val`. 
+        Computes the cross-entropy loss and accuracy for the given batch.
+
+        Args:
+            x_val (torch.Tensor): A tensor of input images of shape (batch_size, channels, height, width).
+            targets_val (torch.Tensor): A tensor of integer labels of shape (batch_size,) indicating the ground-truth 
+                                        class for each input image.
+
+        Returns:
+            A dictionary with the following keys:
+                - 'val_acc' (float): The validation accuracy for the given batch.
+                - 'val_loss' (float): The validation loss for the given batch.
+        """
         if targets_val.ndim > 1:
             targets_val = targets_val.squeeze()
         logits, _, val_loss = self(x_val, targets_val)
