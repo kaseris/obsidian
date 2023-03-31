@@ -47,8 +47,11 @@ class ClassificationHead(nn.Module):
         self.cls_head = nn.Linear(in_features=fan_in,
                                   out_features=n_classes)
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor):
+        if x.ndim > 2:
+            x = x.squeeze()
         embedding = x
+        print(f'x size: {x.size()}')
         out_cls = self.cls_head(embedding)
         return out_cls, embedding
     
@@ -283,4 +286,13 @@ class ResNetDeepFashion(FashionModel):
             loss = F.cross_entropy(preds, target=targets)
             return preds, embeddings, loss
         return preds, embeddings, loss
+    
+    
+if __name__ == '__main__':
+    model = ResNetDeepFashion(backbone='resnet_50',
+                              cls_head_type='simple',
+                              attr_cls_head_type=None,
+                              embedding_sz=512)
+    x = torch.rand((128, 3, 224, 224))
+    out = model(x)
     
