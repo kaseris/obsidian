@@ -97,7 +97,7 @@ class ResNetDeepFashion(nn.Module):
                  backbone: str,
                  cls_head_type : str,
                  attr_cls_head_type : Union[str, None],
-                 embedding_sz: int,):
+                 embedding_sz: int):
         """
         Initialize the ResNetDeepFashion model.
 
@@ -115,6 +115,7 @@ class ResNetDeepFashion(nn.Module):
         self.backbone = BACKBONES[backbone]()
         self.cls_head = None
         self.embedding_sz = embedding_sz
+        self.optimizer = None
         # if attr_cls_head_type is not None:
         #     self.attr_cls_head_type = CLS_HEADS[attr_cls_head_type]()
         self._prepare_model()
@@ -128,7 +129,6 @@ class ResNetDeepFashion(nn.Module):
         self.cls_head = CLS_HEADS[self.cls_head_type](num_features, self.embedding_sz,
                                                       config.DEEP_FASHION_N_CLASSES)
 
-    
     def freeze_weights(self):
         """
         Freezes the weights of the `backbone`'s layers.
@@ -142,6 +142,43 @@ class ResNetDeepFashion(nn.Module):
         """
         for name, param in self.backbone.named_parameters():
             param.requires_grad = True
+    
+    def configure_optimizer(self, optimizer: torch.optim.Optimizer):
+        self.optimizer = optimizer
+        
+    def training_step(self, x: torch.Tensor,
+                      targets: torch.Tensor,
+                      calculate_topk_accuracy=False):
+        # Cross-entropy loss requires 0-D or 1-D target inputs.
+        if targets.ndim > 1:
+            targets = targets.squeeze()
+        logits, _, loss = self(x, targets)
+        logits_cpu = logits.to('cpu')
+        targets_cpu = targets.to('cpu')
+        predictions = torch.argmax(logits_cpu, dim=1)
+        train_accuracy = torch.sum(predictions == targets_cpu) / len(targets_cpu)
+        if calculate_topk_accuracy:
+            pass
+        
+        self.optimizer.zero_grad()
+        loss.backward()
+        self.optimizer.step()
+        
+        return {'train_acc': train_accuracy.item(),
+                'train_loss': loss.item()}
+        
+    def validation_step(self, x_val: torch.Tensor,
+                        targets_val: torch.Tensor):
+        if targets_val.ndim > 1:
+            targets_val = targets_val.squeeze()
+        logits, _, val_loss = self(x_val, targets_val)
+        val_loss = val_loss.to('cpu').item()
+        logits_cpu = logits.to('cpu')
+        targets_cpu = targets_val.to('cpu')
+        predictions = torch.argmax(logits_cpu, dim=1)
+        val_accuracy = torch.sum(predictions == targets_cpu) / len(targets_cpu)
+        return {'val_acc': val_accuracy.item(),
+                'val_loss': val_loss}
     
     def forward(self, x: torch.Tensor, targets: Optional[torch.Tensor] = None) -> Tuple[torch.Tensor, torch.Tensor, Optional[torch.Tensor]]:
         """
