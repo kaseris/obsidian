@@ -51,7 +51,6 @@ class ClassificationHead(nn.Module):
         if x.ndim > 2:
             x = x.squeeze()
         embedding = x
-        print(f'x size: {x.size()}')
         out_cls = self.cls_head(embedding)
         return out_cls, embedding
     
