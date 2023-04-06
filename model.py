@@ -54,6 +54,20 @@ class ClassificationHead(nn.Module):
         out_cls = self.cls_head(embedding)
         return out_cls, embedding
     
+    def init_weights(self):
+        for m in self.modules():
+            if isinstance(m, nn.Conv2d):
+                nn.init.kaiming_normal_(
+                    m.weight, mode='fan_out', nonlinearity='relu')
+                if m.bias is not None:
+                    nn.init.constant_(m.bias, 0)
+            elif isinstance(m, nn.BatchNorm2d):
+                nn.init.constant_(m.weight, 1)
+                nn.init.constant_(m.bias, 0)
+            elif isinstance(m, nn.Linear):
+                nn.init.normal_(m.weight, 0, 0.01)
+                nn.init.constant_(m.bias, 0)
+    
 
 @CLS_HEADS.register('linear')
 class LinearClassificationHead(nn.Module):
@@ -83,6 +97,20 @@ class LinearClassificationHead(nn.Module):
         embedding = self.embedding(x.squeeze())
         out_cls = self.cls_head(embedding)
         return out_cls, embedding
+    
+    def init_weights(self):
+        for m in self.modules():
+            if isinstance(m, nn.Conv2d):
+                nn.init.kaiming_normal_(
+                    m.weight, mode='fan_out', nonlinearity='relu')
+                if m.bias is not None:
+                    nn.init.constant_(m.bias, 0)
+            elif isinstance(m, nn.BatchNorm2d):
+                nn.init.constant_(m.weight, 1)
+                nn.init.constant_(m.bias, 0)
+            elif isinstance(m, nn.Linear):
+                nn.init.normal_(m.weight, 0, 0.01)
+                nn.init.constant_(m.bias, 0)
 
 class FashionModel(ABC, nn.Module):
     @abstractmethod
@@ -285,13 +313,3 @@ class ResNetDeepFashion(FashionModel):
             loss = F.cross_entropy(preds, target=targets)
             return preds, embeddings, loss
         return preds, embeddings, loss
-    
-    
-if __name__ == '__main__':
-    model = ResNetDeepFashion(backbone='resnet_50',
-                              cls_head_type='simple',
-                              attr_cls_head_type=None,
-                              embedding_sz=512)
-    x = torch.rand((128, 3, 224, 224))
-    out = model(x)
-    
