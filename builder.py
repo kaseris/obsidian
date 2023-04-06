@@ -2,6 +2,7 @@ import os.path as osp
 import json
 
 from model import MODELS
+from dataset import DATASETS
 
 
 def build_model(cfg):
@@ -34,9 +35,3 @@ def build_model(cfg):
         
     return MODELS[model_type](**model_cfg)
         
-if __name__ == '__main__':
-    with open(osp.join('configs', 'base_model.json'), 'r') as f:
-        data = json.load(f)
-    model = build_model(data['model'])
-    print(model)
-    
