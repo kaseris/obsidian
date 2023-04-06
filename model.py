@@ -8,6 +8,8 @@ import torchvision
 import torchvision.models as models
 
 import config
+
+from pooling import DESCRIPTORS, POOLING
 from registry import Registry
 
 BACKBONES = Registry()
@@ -106,6 +108,64 @@ class LinearClassificationHead(nn.Module):
                 if m.bias is not None:
                     nn.init.constant_(m.bias, 0)
             elif isinstance(m, nn.BatchNorm2d):
+                nn.init.constant_(m.weight, 1)
+                nn.init.constant_(m.bias, 0)
+            elif isinstance(m, nn.Linear):
+                nn.init.normal_(m.weight, 0, 0.01)
+                nn.init.constant_(m.bias, 0)
+
+@CLS_HEADS.register('cgd_head')
+class CombinedGlobalDescriptorClassHead(nn.Module):
+    """
+    A PyTorch module that combines global descriptors and a classification head
+    to classify image data.
+
+    Args:
+        fan_in (int): Number of channels in the input feature map.
+        feat_dim (int): Dimensionality of the output feature map of the global descriptors.
+        n_classes (int): Number of classes for classification.
+        gd_config (str, optional): String specifying the configuration of the global
+            descriptors to use. This should be a string composed of one or more of the
+            following characters: 'S' (for a descriptor using sum-pooling), 'M' (for
+            a descriptor using max-pooling), and 'G' (for a descriptor using generalized
+            mean pooling). Defaults to 's' (a single descriptor using sum-pooling).
+
+    Attributes:
+        gd (CombinedGlobalDescriptor): A CombinedGlobalDescriptor module that computes
+            one or more global descriptors from the input feature map.
+        bn (nn.BatchNorm2d): A BatchNorm2d layer that normalizes the output of the
+            first global descriptor.
+        cls (nn.Linear): A linear layer that computes the logits for classification.
+
+    Methods:
+        forward(x): Computes the logits for classification from the input feature map.
+        init_weights(): Initializes the weights of the batch normalization and linear layers.
+
+    Raises:
+        AssertionError: If `gd_config` is not a valid string specifying the global descriptor
+            configuration, or if `feat_dim` is not divisible by the number of global descriptors.
+    """
+    def __init__(self,
+                 fan_in: int,
+                 feat_dim: int,
+                 n_classes: int,
+                 gd_config='s') -> None:
+        super(CombinedGlobalDescriptorClassHead, self).__init__()
+        self.gd = DESCRIPTORS['config_descriptor'](fan_in=fan_in,
+                                                   gd_config=gd_config,
+                                                   feat_dim=feat_dim)
+        self.bn = nn.BatchNorm2d(num_features=fan_in)
+        self.cls = nn.Linear(in_features=fan_in, out_features=n_classes, bias=True)
+    
+    def forward(self, x: torch.Tensor):
+        gd, first_gd = self.gd(x)
+        out = self.bn(first_gd)
+        out = self.cls(out)
+        return out, gd
+    
+    def init_weights(self):
+        for m in self.modules():
+            if isinstance(m, nn.BatchNorm2d):
                 nn.init.constant_(m.weight, 1)
                 nn.init.constant_(m.bias, 0)
             elif isinstance(m, nn.Linear):
