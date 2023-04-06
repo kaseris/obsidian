@@ -1,0 +1,14 @@
+{
+    "model": {
+        "type": "ResNetDeepFashion",
+        "model_cfg": {
+            "backbone": "resnet_50",
+            "cls_head_type": "cgd_head",
+            "cls_head_config": {
+                "gd_config": "SMG",
+                "feat_dim": 1536,
+                "n_classes": 50
+            }
+        }
+    }
+}
