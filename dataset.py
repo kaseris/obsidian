@@ -148,16 +148,11 @@ class DeepFashionCategoryAttribute(Dataset):
     ```
     """
     def __init__(self,
-                 data_dir=config.DEEP_FASHION_DIR,
-                 include_attributes=False,
-                 transforms=None,
-                 split_type='train',
-                 split_info=None,
-                 garment_annotations=None):
-        self.data_dir = data_dir
-        self.transforms = transforms
-        self.include_attributes = include_attributes
-        self.split_type = split_type
+                 **kwargs):
+        self.data_dir = kwargs['data_dir']
+        self.transforms = kwargs['transforms']
+        self.include_attributes = kwargs['include_attributes']
+        self.split_type = kwargs['split_type']
         
         if self.transforms is None:
             self.transforms = TRANSFORMS['DeepFashion_default']()
@@ -180,9 +175,9 @@ class DeepFashionCategoryAttribute(Dataset):
 
 
         self.CLS_TO_IDX = {v: k for k, v in self.IDX_TO_CLASS.items()}
-        if split_info is not None and garment_annotations is not None:
-            self.split = split_info[self.split_type]
-            self.annos = garment_annotations
+        if kwargs['split_info'] is not None and kwargs['garment_annotations'] is not None:
+            self.split = kwargs['split_info'][self.split_type]
+            self.annos = kwargs['garment_annotations']
         else:
             self.split, self.annos = prepare_data()
 
