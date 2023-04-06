@@ -209,10 +209,7 @@ class ResNetDeepFashion(FashionModel):
         Freezes the weights of the layers up to `self.resnet.fc`.
     """
     def __init__(self,
-                 backbone: str,
-                 cls_head_type : str,
-                 attr_cls_head_type : Union[str, None],
-                 cls_head_config: dict):
+                 **kwargs):
         """
         Initialize the ResNetDeepFashion model.
 
@@ -226,11 +223,11 @@ class ResNetDeepFashion(FashionModel):
             The size of the output embeddings.
         """
         super(ResNetDeepFashion, self).__init__()
-        self.cls_head_type = cls_head_type
-        self.backbone = BACKBONES[backbone]()
+        self.cls_head_type = kwargs['cls_head_type']
+        self.backbone = BACKBONES[kwargs['backbone']]()
         self.cls_head = None
         self.optimizer = None
-        self.cls_head_config = cls_head_config
+        self.cls_head_config = kwargs['cls_head_config']
         # if attr_cls_head_type is not None:
         #     self.attr_cls_head_type = CLS_HEADS[attr_cls_head_type]()
         self._prepare_model()
