@@ -1,4 +1,5 @@
-from typing import Callable
+from typing import Callable, Union
+import torch.nn as nn
 
 class Registry:
     """
@@ -38,7 +39,7 @@ class Registry:
 
         return inner_wrapper
 
-    def __getitem__(cls, item: str) -> Callable:
+    def __getitem__(cls, item: str) -> Union[Callable, nn.Module]:
         """
         Get the registered class with the specified name.
 
