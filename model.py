@@ -41,13 +41,11 @@ def vit_b_16():
 
 @CLS_HEADS.register('simple')
 class ClassificationHead(nn.Module):
-    def __init__(self, fan_in: int,
-                 embedding_sz: int,
-                 n_classes: int) -> None:
+    def __init__(self, **kwargs) -> None:
         super(ClassificationHead, self).__init__()
-        self.embedding_sz = embedding_sz
-        self.cls_head = nn.Linear(in_features=fan_in,
-                                  out_features=n_classes)
+        self.embedding_sz = kwargs['embedding_sz']
+        self.cls_head = nn.Linear(in_features=kwargs['fan_in'],
+                                  out_features=kwargs['n_classes'])
 
     def forward(self, x: torch.Tensor):
         if x.ndim > 2:
@@ -85,15 +83,13 @@ class LinearClassificationHead(nn.Module):
     Returns:
         The output tensor of the classification head and the embedding tensor.
     """
-    def __init__(self, fan_in : int,
-                 embedding_sz : int,
-                 n_classes) -> None:
+    def __init__(self, **kwargs) -> None:
         super(LinearClassificationHead, self).__init__()
-        self.embedding = nn.Linear(in_features=fan_in,
-                                   out_features=embedding_sz)
+        self.embedding = nn.Linear(in_features=kwargs['fan_in'],
+                                   out_features=kwargs['embedding_sz'])
         self.act = nn.ReLU()
-        self.cls_head = nn.Linear(in_features=embedding_sz,
-                             out_features=n_classes)
+        self.cls_head = nn.Linear(in_features=kwargs['embedding_sz'],
+                             out_features=kwargs['n_classes'])
         
     def forward(self, x):
         embedding = self.embedding(x.squeeze())
@@ -146,16 +142,13 @@ class CombinedGlobalDescriptorClassHead(nn.Module):
             configuration, or if `feat_dim` is not divisible by the number of global descriptors.
     """
     def __init__(self,
-                 fan_in: int,
-                 feat_dim: int,
-                 n_classes: int,
-                 gd_config='s') -> None:
+                 **kwargs) -> None:
         super(CombinedGlobalDescriptorClassHead, self).__init__()
-        self.gd = DESCRIPTORS['config_descriptor'](fan_in=fan_in,
-                                                   gd_config=gd_config,
-                                                   feat_dim=feat_dim)
-        self.bn = nn.BatchNorm2d(num_features=fan_in)
-        self.cls = nn.Linear(in_features=fan_in, out_features=n_classes, bias=True)
+        self.gd = DESCRIPTORS['config_descriptor'](fan_in=kwargs['fan_in'],
+                                                   gd_config=kwargs['gd_config'],
+                                                   feat_dim=kwargs['feat_dim'])
+        self.bn = nn.BatchNorm2d(num_features=kwargs['fan_in'])
+        self.cls = nn.Linear(in_features=kwargs['fan_in'], out_features=kwargs['n_classes'], bias=True)
     
     def forward(self, x: torch.Tensor):
         gd, first_gd = self.gd(x)
@@ -219,7 +212,7 @@ class ResNetDeepFashion(FashionModel):
                  backbone: str,
                  cls_head_type : str,
                  attr_cls_head_type : Union[str, None],
-                 embedding_sz: int):
+                 cls_head_config: dict):
         """
         Initialize the ResNetDeepFashion model.
 
@@ -236,8 +229,8 @@ class ResNetDeepFashion(FashionModel):
         self.cls_head_type = cls_head_type
         self.backbone = BACKBONES[backbone]()
         self.cls_head = None
-        self.embedding_sz = embedding_sz
         self.optimizer = None
+        self.cls_head_config = cls_head_config
         # if attr_cls_head_type is not None:
         #     self.attr_cls_head_type = CLS_HEADS[attr_cls_head_type]()
         self._prepare_model()
@@ -248,8 +241,8 @@ class ResNetDeepFashion(FashionModel):
         """
         num_features = list(self.backbone.children())[-1].in_features
         self.backbone = nn.Sequential(*list(self.backbone.children())[:-1])
-        self.cls_head = CLS_HEADS[self.cls_head_type](num_features, self.embedding_sz,
-                                                      config.DEEP_FASHION_N_CLASSES)
+        self.cls_head_config['fan_in'] = num_features
+        self.cls_head = CLS_HEADS[self.cls_head_type](**self.cls_head_config)
 
     def freeze_weights(self):
         """
@@ -373,3 +366,4 @@ class ResNetDeepFashion(FashionModel):
             loss = F.cross_entropy(preds, target=targets)
             return preds, embeddings, loss
         return preds, embeddings, loss
+    
