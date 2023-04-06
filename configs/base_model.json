@@ -10,5 +10,13 @@
                 "n_classes": 50
             }
         }
+    },
+    "dataset": {
+        "type": "deepfashion_cat_att",
+        "dataset_cfg": {
+            "include_attributes": false,
+            "transforms": "DeepFashion_default_tf",
+            "split_type": "train"
+        }
     }
 }
