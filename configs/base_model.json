@@ -16,7 +16,9 @@
         "dataset_cfg": {
             "include_attributes": false,
             "transforms": "DeepFashion_default_tf",
-            "split_type": "train"
+            "split_type": "train",
+            "split_info": null,
+            "garment_annotations": null
         }
     }
 }
