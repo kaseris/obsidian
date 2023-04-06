@@ -149,7 +149,7 @@ class DeepFashionCategoryAttribute(Dataset):
     """
     def __init__(self,
                  **kwargs):
-        self.data_dir = kwargs['data_dir']
+        self.data_dir = config.DEEP_FASHION_DIR
         self.transforms = kwargs['transforms']
         self.include_attributes = kwargs['include_attributes']
         self.split_type = kwargs['split_type']
