@@ -11,6 +11,7 @@ from torchvision import transforms
 
 import config
 from registry import Registry
+from utils import prepare_data
 
 DATASETS = Registry()
 TRANSFORMS = Registry()
@@ -179,9 +180,11 @@ class DeepFashionCategoryAttribute(Dataset):
 
 
         self.CLS_TO_IDX = {v: k for k, v in self.IDX_TO_CLASS.items()}
-        
-        self.split = split_info[self.split_type]
-        self.annos = garment_annotations
+        if split_info is not None and garment_annotations is not None:
+            self.split = split_info[self.split_type]
+            self.annos = garment_annotations
+        else:
+            self.split, self.annos = prepare_data()
 
     def __len__(self):
         return len(self.split)
