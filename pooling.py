@@ -265,7 +265,7 @@ class CombinedGlobalDescriptor(nn.Module):
                  gd_config: str,
                  feat_dim: int) -> None:
         super(CombinedGlobalDescriptor, self).__init__()
-        assert gd_config in CombinedGlobalDescriptor.CHOICES, f'gd_config must be any of the following options: {", ".join(c for c in CombinedGlobalDescriptor.CHOICES)}'
+        assert gd_config.upper() in CombinedGlobalDescriptor.CHOICES, f'gd_config must be any of the following options: {", ".join(c for c in CombinedGlobalDescriptor.CHOICES)}'
 
         n = len(gd_config)
         k = feat_dim // n
