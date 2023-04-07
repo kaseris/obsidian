@@ -11,14 +11,20 @@
             }
         }
     },
-    "dataset": {
+    "train_dataset": {
         "type": "deepfashion_cat_att",
         "dataset_cfg": {
             "include_attributes": false,
             "transforms": "DeepFashion_default_tf",
-            "split_type": "train",
-            "split_info": null,
-            "garment_annotations": null
+            "split_type": "train"
+        }
+    },
+    "val_dataset": {
+        "type": "deepfashion_cat_att",
+        "dataset_cfg": {
+            "include_attributes": false,
+            "transforms": "DeepFashion_validation_tf",
+            "split_type": "val"
         }
     }
 }
