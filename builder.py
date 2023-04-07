@@ -1,11 +1,13 @@
-import os.path as osp
 import json
+import logging
+import os.path as osp
 
 import torch
 import torch.nn as nn
 
-from model import MODELS
 from dataset import DATASETS
+from model import MODELS
+from utils import prepare_data
 
 
 def build_model(cfg) -> nn.Module:
@@ -38,7 +40,7 @@ def build_model(cfg) -> nn.Module:
 
     return MODELS[model_type](**model_cfg)
 
-def build_dataset(cfg) -> torch.utils.data.Dataset:
+def build_dataset(data: dict) -> torch.utils.data.Dataset:
     """
     Builds a PyTorch dataset based on the configuration specified in `cfg`.
 
@@ -60,18 +62,35 @@ def build_dataset(cfg) -> torch.utils.data.Dataset:
     print(dataset)
     ```
     """
-    dataset_cfg = cfg['dataset_cfg']
-    dataset_type = cfg['type']
-    
-    if dataset_type not in DATASETS.registry.keys():
-        raise ValueError(f'Unsupported model type: `{dataset_type}`. '
-                         f'Must be one of \n{list(DATASETS.registry.keys())}')
+    # Find all the dataset related keys
+    dataset_keys = list(filter(lambda x: 'dataset' in x, data.keys()))
+    ret = dict()
+    logging.info(f'Building datasets.')
+    logging.debug(f'Dataset keys: {" ,".join(k for k in dataset_keys)}')
+    for key in dataset_keys:
+        logging.info(f'Building dataset based on `{key}` dataset')
+        dataset_cfg = data[key]['dataset_cfg']
+        dataset_type = data[key]['type']
+        logging.debug(f'Config:\n {dataset_cfg}')
         
-    return DATASETS[dataset_type](**dataset_cfg)
+        if dataset_type not in DATASETS.registry.keys():
+            raise ValueError(f'Unsupported model type: `{dataset_type}`. '
+                            f'Must be one of \n{list(DATASETS.registry.keys())}')
+        
+        if key == 'train_dataset':
+            logging.debug('Calling `prepare_data` function.')
+            splits, annotations = prepare_data()
+            logging.info('Data preparation done.')
+        dataset_cfg['split_info'] = splits
+        dataset_cfg['garment_annotations'] = annotations
+        ret[key] = DATASETS[dataset_type](**dataset_cfg)
+        
+    return ret
 
 if __name__ == '__main__':
     with open(osp.join('configs', 'base_model.json'), 'r') as f:
         data = json.load(f)
-    dataset = build_dataset(data['dataset'])
-    print(dataset)
+    logging.basicConfig(level=logging.DEBUG)
+    datasets = build_dataset(data=data)
+    print(datasets)
     
