@@ -150,12 +150,10 @@ class DeepFashionCategoryAttribute(Dataset):
     def __init__(self,
                  **kwargs):
         self.data_dir = config.DEEP_FASHION_DIR
-        self.transforms = kwargs['transforms']
         self.include_attributes = kwargs['include_attributes']
         self.split_type = kwargs['split_type']
         
-        if self.transforms is None:
-            self.transforms = TRANSFORMS['DeepFashion_default']()
+        self.transforms = TRANSFORMS[kwargs['transforms']]()
         
         self.CLASS_LABELS = []
         self.ATTR_LABELS = []
