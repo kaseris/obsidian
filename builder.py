@@ -6,10 +6,14 @@ import os.path as osp
 
 import torch
 import torch.nn as nn
+from torch.utils.data import DataLoader
 import torch.optim as optim
 
 from dataset import DATASETS
+from losses import LOSSES
 from model import MODELS
+from trackers import TRACKERS
+from trainer import TRAINERS, Trainer
 from utils import prepare_data
 
 
@@ -106,7 +110,7 @@ def build_dataset(data: dict) -> torch.utils.data.Dataset:
     return ret
 
 def build_optimizer(cfg: dict,
-                    model: nn.Module):
+                    model: nn.Module) -> optim.Optimizer:
     """
     Builds a PyTorch optimizer object using the configuration provided in the `cfg` dictionary.
 
@@ -152,7 +156,7 @@ def build_optimizer(cfg: dict,
         for name, module in model.named_modules():
             if name in cfg['params']:
                 logging.debug(f'Module: {module}')
-                optimizer_cfg['params'] = trainable_params.extend(list(module.parameters()))
+                optimizer_cfg['params'] = module.parameters()
     else:
         trainable_params = list(filter(lambda x: x.requires_grad, model.parameters()))
     logging.debug(f'Trainable params: {optimizer_cfg["params"]}')
@@ -162,17 +166,58 @@ def build_optimizer(cfg: dict,
             
     return OPTIMIZERS[optimizer_type](**optimizer_cfg)
 
+def build_trainer(cfg_file) -> Trainer:
+    with open(cfg_file, 'r') as f:
+        data = json.load(f)
+    
+    model_cfg = data['model']
+    logging.debug(f'Model configuration: {model_cfg}')
+    logging.info('Building model...')
+    model = build_model(cfg=model_cfg)
+    logging.info('Building datasets...')
+    dataset_dict = build_dataset(data=data)
+    
+    logging.info('Creating optimizers.')
+    optimizer_cfg = data['optimizer']
+    logging.debug(f'Optimizer configuration: {optimizer_cfg}')
+    opt = build_optimizer(cfg=optimizer_cfg, model=model)
+    
+    # Needs to be implemented under the factory design pattern
+    logging.info('Creating data loaders.')
+    train_loader = DataLoader(dataset=dataset_dict['train_dataset'], **data['train_loader']['loader_cfg'])
+    val_loader = DataLoader(dataset=dataset_dict['val_dataset'], **data['val_loader']['loader_cfg'])
+    # ========================================================
+    
+    trainer_type = data['trainer']['type']
+    logging.debug(f'Trainer type: {trainer_type}')
+    trainer_cfg = data['trainer']['trainer_cfg']
+    logging.debug(f'Trainer configuration: {trainer_cfg}')
+    criterion = LOSSES[data['trainer']['trainer_cfg']['criterion']]()
+    device = 'cuda' if torch.cuda.is_available() else 'cpu'
+    logging.debug(f'Device: {device}')
+    
+    tracker_cfg = data['trainer']['trainer_cfg']['tracker']
+    tracker = TRACKERS[tracker_cfg](project_name='fashion-retrieval',
+                                    experiment_name='base-pre-train')
+    tracker.log_parameters(data)
+    
+    trainer_cfg = {
+        'model': model,
+        'train_loader': train_loader,
+        'val_loader': val_loader,
+        'optimizer': opt,
+        'criterion': criterion,
+        'device': device,
+        'experiment_tracker': tracker,
+        'n_epochs': data['trainer']['trainer_cfg']['n_epochs']
+    }
+    
+    return TRAINERS[trainer_type](**trainer_cfg)
+
 
 if __name__ == '__main__':
-    with open(osp.join('configs', 'base_model.json'), 'r') as f:
-        data = json.load(f)
     logging.basicConfig(level=logging.DEBUG)
-    model = build_model(cfg=data['model'])
-    # for name, module in model.named_modules():
-    #     if name == 'cls_head':
-    #         print(module)
-    #         print(f'parameters: {list(filter(lambda x: x.requires_grad, module.parameters()))}')
-    opt =  build_optimizer(cfg=data['optimizer'],
-                           model=model)
-    print(opt)
+    config_path = osp.join('configs', 'base_model.json')
+    trainer = build_trainer(config_path)
+    trainer.train()
     
