@@ -120,6 +120,9 @@ class Trainer:
         Args:
             epochs (int): number of epochs to train the model
         """
+        self.model.to(self.device)
+        self.criterion.to(self.device)
+        
         for epoch in range(self.n_epochs):
             self.epoch = epoch
             train_loss, train_acc = self.train_epoch(epoch)
