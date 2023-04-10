@@ -165,7 +165,7 @@ class CombinedGlobalDescriptorClassHead(nn.Module):
                 nn.init.normal_(m.weight, 0, 0.01)
                 nn.init.constant_(m.bias, 0)
 
-class FashionModel(ABC, nn.Module):
+class OBSModule(ABC, nn.Module):
     @abstractmethod
     def forward(self, x):
         pass
@@ -180,7 +180,7 @@ class FashionModel(ABC, nn.Module):
 
 
 @MODELS.register('ResNetDeepFashion')
-class ResNetDeepFashion(FashionModel):
+class ResNetDeepFashion(OBSModule):
     """
     A class that defines the ResNetDeepFashion model.
 
@@ -228,8 +228,6 @@ class ResNetDeepFashion(FashionModel):
         self.cls_head = None
         self.optimizer = None
         self.cls_head_config = kwargs['cls_head_config']
-        # if attr_cls_head_type is not None:
-        #     self.attr_cls_head_type = CLS_HEADS[attr_cls_head_type]()
         self._prepare_model()
 
     def _prepare_model(self):
@@ -340,7 +338,8 @@ class ResNetDeepFashion(FashionModel):
         return {'val_acc': val_accuracy.item(),
                 'val_loss': val_loss}
     
-    def forward(self, x: torch.Tensor, targets: Optional[torch.Tensor] = None) -> Tuple[torch.Tensor, torch.Tensor, Optional[torch.Tensor]]:
+    def forward(self, x: torch.Tensor,
+                targets: Optional[torch.Tensor] = None) -> Tuple[torch.Tensor, torch.Tensor, Optional[torch.Tensor]]:
         """
         Forward pass of the ResNetDeepFashion model.
 
