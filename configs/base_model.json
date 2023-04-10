@@ -3,10 +3,9 @@
         "type": "ResNetDeepFashion",
         "model_cfg": {
             "backbone": "resnet_50",
-            "cls_head_type": "cgd_head",
+            "cls_head_type": "simple",
             "cls_head_config": {
-                "gd_config": "SMG",
-                "feat_dim": 1536,
+                "embedding_sz": 1024,
                 "n_classes": 50
             }
         }
@@ -40,7 +39,24 @@
         "type": "DataLoader",
         "loader_cfg": {
             "batch_size": 32,
-            "sampler": null
+            "sampler": null,
+            "shuffle": true
+        }
+    },
+    "val_loader": {
+        "type": "DataLoader",
+        "loader_cfg": {
+            "batch_size": 32,
+            "sampler": null,
+            "shuffle": false
+        }
+    },
+    "trainer": {
+        "type": "simple-trainer",
+        "trainer_cfg": {
+            "n_epochs": 10,
+            "tracker": "wandb",
+            "criterion": "CrossEntropyLoss"
         }
     }
 }
