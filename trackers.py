@@ -1,4 +1,10 @@
 from abc import ABC, abstractmethod
+import logging
+import torch.nn as nn
+
+from registry import Registry
+
+TRACKERS = Registry()
 
 
 class ExperimentTracker(ABC):
@@ -50,6 +56,7 @@ class ExperimentTracker(ABC):
         pass
 
 
+@TRACKERS.register('wandb')
 class WandbExperimentTracker(ExperimentTracker):
     """
     Implementation of an experiment tracker using the Weights & Biases (wandb) library.
@@ -72,8 +79,10 @@ class WandbExperimentTracker(ExperimentTracker):
         tags: list = None,
         config: dict = None
     ):
+        logging.debug(f'Creating {__class__.__name__} experiment tracker.')
         super().__init__(project_name, experiment_name)
         import wandb
+        logging.debug('Attempting log in.')
         wandb.login()
         wandb.init(
             project=self.project_name,
@@ -92,9 +101,9 @@ class WandbExperimentTracker(ExperimentTracker):
         Args:
             params (dict): A dictionary of hyperparameters and their values.
         """
-        self.wandb.config.update(params)
+        self.wandb.config = params
 
-    def log_metrics(self, metrics: dict, step: int = None):
+    def log_metrics(self, metrics: dict):
         """
         Log metrics of the experiment.
 
@@ -102,7 +111,7 @@ class WandbExperimentTracker(ExperimentTracker):
             metrics (dict): A dictionary of metrics and their values.
             step (int, optional): The step number for which to log the metrics.
         """
-        self.wandb.log(metrics, step=step)
+        self.wandb.log(metrics)
 
     def log_artifact(self, path: str):
         """
@@ -112,3 +121,7 @@ class WandbExperimentTracker(ExperimentTracker):
             path (str): The path to the artifact file.
         """
         self.wandb.save(path)
+
+    def watch(self, model: nn.Module):
+        self.wandb.watch(model)
+        
