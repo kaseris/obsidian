@@ -1,0 +1,64 @@
+{
+    "model": {
+        "type": "ResNetDeepFashion",
+        "model_cfg": {
+            "backbone": "resnet_50",
+            "cls_head_type": "simple",
+            "cls_head_config": {
+                "gd_config": "SMG",
+                "feat_dim": 1536,
+                "emebedding_sz": 1024,
+                "n_classes": 50
+            }
+        }
+    },
+    "train_dataset": {
+        "type": "deepfashion_cat_att",
+        "dataset_cfg": {
+            "include_attributes": false,
+            "transforms": "DeepFashion_default_tf",
+            "split_type": "train"
+        }
+    },
+    "val_dataset": {
+        "type": "deepfashion_cat_att",
+        "dataset_cfg": {
+            "include_attributes": false,
+            "transforms": "DeepFashion_validation_tf",
+            "split_type": "val"
+        }
+    },
+    "optimizer": {
+        "type": "Adam",
+        "params": ["cls_head"],
+        "optimizer_cfg": {
+            "lr": 1e-4,
+            "betas": [0.9, 0.999],
+            "eps": 1e-8
+        }
+    },
+    "train_loader": {
+        "type": "DataLoader",
+        "loader_cfg": {
+            "batch_size": 32,
+            "sampler": null,
+            "shuffle": true
+        }
+    },
+    "val_loader": {
+        "type": "DataLoader",
+        "loader_cfg": {
+            "batch_size": 32,
+            "sampler": null,
+            "shuffle": false
+        }
+    },
+    "trainer": {
+        "type": "simple-trainer",
+        "trainer_cfg": {
+            "n_epochs": 10,
+            "tracker": "wandb",
+            "criterion": "CrossEntropyLoss"
+        }
+    }
+}

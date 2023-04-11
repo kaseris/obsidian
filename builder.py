@@ -217,7 +217,7 @@ def build_trainer(cfg_file) -> Trainer:
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.DEBUG)
-    config_path = osp.join('configs', 'base_model.json')
+    config_path = osp.join('configs', 'resnet_cgd_base.json')
     trainer = build_trainer(config_path)
     trainer.train()
     
