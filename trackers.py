@@ -1,3 +1,5 @@
+import os
+
 from abc import ABC, abstractmethod
 import logging
 import torch.nn as nn
@@ -83,7 +85,7 @@ class WandbExperimentTracker(ExperimentTracker):
         super().__init__(project_name, experiment_name)
         import wandb
         logging.debug('Attempting log in.')
-        wandb.login()
+        wandb.login(key=os.environ['WANDB_API_KEY'])
         wandb.init(
             project=self.project_name,
             name=run_name,
