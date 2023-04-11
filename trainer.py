@@ -66,6 +66,10 @@ class Trainer:
             if targets.ndim > 1:
                 targets = targets.squeeze()
                 logging.debug(f'Targets shape: {targets.shape}')
+            # Calculate the training batch statistics    
+            targets_hist = torch.histc(targets.cpu(), bins=50, min=0, max=49)
+            targets_hist = targets_hist.numpy()
+            
             outputs, _, _ = self.model(inputs, targets)
             loss = self.criterion(outputs, targets)
             loss.backward()
@@ -80,10 +84,11 @@ class Trainer:
             total += targets.size(0)
             
             if self.experiment_tracker is not None:
-                self.experiment_tracker.log_metrics({'train_loss': loss.item(),
-                                                     'train_acc': train_correct / total,
-                                                     'epoch': epoch,
-                                                     'step': batch_idx})
+                self.experiment_tracker.log_metrics({'Step Training Loss': loss.item(),
+                                                     'Step Training Accuracy': train_correct / total,
+                                                     'Epoch': epoch,
+                                                     'Step': batch_idx,
+                                                     'Train Batch Class Statistics': self.tracker.wandb.Histogram(np_histogram=targets_hist)})
             
         return train_loss / len(self.train_loader), train_correct / total
     
@@ -106,6 +111,9 @@ class Trainer:
                 inputs, targets = inputs.to(self.device), targets.to(self.device)
                 if targets.ndim > 1:
                     targets = targets.squeeze()
+                # Calculate the training batch statistics    
+                targets_hist = torch.histc(targets.cpu(), bins=50, min=0, max=49)
+                targets_hist = targets_hist.numpy()
                 outputs, _, _ = self.model(inputs, targets)
                 loss = self.criterion(outputs, targets)
 
@@ -117,10 +125,11 @@ class Trainer:
                 total += targets.size(0)
                 
                 if self.experiment_tracker is not None:
-                    self.experiment_tracker.log_metrics({'val_loss': loss.item(),
-                                                         'val_acc': val_correct / total,
-                                                         'epoch': epoch,
-                                                         'step': batch_idx})
+                    self.experiment_tracker.log_metrics({'Validation Loss': loss.item(),
+                                                         'Validation Accuracy': val_correct / total,
+                                                         'Epoch': epoch,
+                                                         'Step': batch_idx,
+                                                         'Train Batch Class Statistics': self.tracker.wandb.Histogram(np_histogram=targets_hist)})
                 
         return val_loss / len(self.val_loader), val_correct / total
     
@@ -140,4 +149,8 @@ class Trainer:
             val_loss, val_acc = self.validate_epoch(epoch)
             
             if self.experiment_tracker is not None:
-                self.experiment_tracker.log_epoch(train_loss, train_acc, val_loss, val_acc, epoch)
+                self.experiment_tracker.log_metrics({'Epoch Training Loss': train_loss,
+                                                     'Epoch Training Accuracy': train_acc,
+                                                     'Epoch Validation Loss': val_loss,
+                                                     'Epoch Validation Accuracy': val_acc,
+                                                     'Epoch': self.epoch})
