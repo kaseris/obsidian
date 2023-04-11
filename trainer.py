@@ -104,9 +104,9 @@ class Trainer:
                 inputs, targets = batch['img'], batch['category']
                 logging.info(f'Epoch: [{self.epoch + 1}/{self.n_epochs}] Validation Step: [{batch_idx}/{len(self.val_loader)}]')
                 inputs, targets = inputs.to(self.device), targets.to(self.device)
-                outputs, _, _ = self.model(inputs, targets)
                 if targets.ndim > 1:
                     targets = targets.squeeze()
+                outputs, _, _ = self.model(inputs, targets)
                 loss = self.criterion(outputs, targets)
 
                 val_loss += loss.item()
