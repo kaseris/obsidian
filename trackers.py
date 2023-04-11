@@ -101,7 +101,7 @@ class WandbExperimentTracker(ExperimentTracker):
         Args:
             params (dict): A dictionary of hyperparameters and their values.
         """
-        self.wandb.config = params
+        self.wandb.config.update(params)
 
     def log_metrics(self, metrics: dict):
         """
