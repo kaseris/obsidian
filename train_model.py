@@ -15,3 +15,7 @@ def main():
     trainer = build_trainer(args.config)
     trainer.train()
     
+
+if __name__ == '__main__':
+    main()
+    
