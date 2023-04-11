@@ -3,3 +3,5 @@ numpy
 scikit-learn
 wandb
 scipy
+torchvision
+Pillow
