@@ -1,5 +1,7 @@
 import logging
 
+import numpy as np
+
 import torch
 import torch.nn as nn
 import torch.utils.data as data
@@ -67,8 +69,8 @@ class Trainer:
                 targets = targets.squeeze()
                 logging.debug(f'Targets shape: {targets.shape}')
             # Calculate the training batch statistics    
-            targets_hist = torch.histc(targets.cpu(), bins=50, min=0, max=49)
-            targets_hist = targets_hist.numpy()
+            targets_hist = targets.cpu().numpy()
+            targets_hist = np.histogram(targets_hist, bins=50, range=(0.0, 49.0))
             
             outputs, _, _ = self.model(inputs, targets)
             loss = self.criterion(outputs, targets)
@@ -88,7 +90,7 @@ class Trainer:
                                                      'Step Training Accuracy': train_correct / total,
                                                      'Epoch': epoch,
                                                      'Step': batch_idx,
-                                                     'Train Batch Class Statistics': self.tracker.wandb.Histogram(np_histogram=targets_hist)})
+                                                     'Train Batch Class Statistics': self.experiment_tracker.wandb.Histogram(np_histogram=targets_hist)})
             
         return train_loss / len(self.train_loader), train_correct / total
     
@@ -112,8 +114,8 @@ class Trainer:
                 if targets.ndim > 1:
                     targets = targets.squeeze()
                 # Calculate the training batch statistics    
-                targets_hist = torch.histc(targets.cpu(), bins=50, min=0, max=49)
-                targets_hist = targets_hist.numpy()
+                targets_hist = targets.cpu().numpy()
+                targets_hist = np.histogram(targets_hist, bins=50, range=(0.0, 49.0))
                 outputs, _, _ = self.model(inputs, targets)
                 loss = self.criterion(outputs, targets)
 
@@ -129,7 +131,7 @@ class Trainer:
                                                          'Validation Accuracy': val_correct / total,
                                                          'Epoch': epoch,
                                                          'Step': batch_idx,
-                                                         'Train Batch Class Statistics': self.tracker.wandb.Histogram(np_histogram=targets_hist)})
+                                                         'Validation Batch Class Statistics': self.experiment_tracker.wandb.Histogram(np_histogram=targets_hist)})
                 
         return val_loss / len(self.val_loader), val_correct / total
     
