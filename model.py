@@ -43,7 +43,8 @@ def vit_b_16():
 class ClassificationHead(nn.Module):
     def __init__(self, **kwargs) -> None:
         super(ClassificationHead, self).__init__()
-        self.embedding_sz = kwargs['embedding_sz']
+        if kwargs.get('embedding_sz'):
+            setattr(self, 'embedding_sz', kwargs.get('embedding_sz'))
         self.cls_head = nn.Linear(in_features=kwargs['fan_in'],
                                   out_features=kwargs['n_classes'])
 
