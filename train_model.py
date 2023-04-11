@@ -1,5 +1,6 @@
 import os
 import argparse
+import logging
 
 from builder import build_trainer
 
@@ -10,6 +11,7 @@ args.add_argument('--config', type=str, default='configs/resnet_cgd_base.json', 
 
 def main():
     os.environ['WANDB_API_KEY'] = args.wandb_api_key
+    logging.basicConfig(level=logging.DEBUG)
     trainer = build_trainer(args.config)
     trainer.train()
     
