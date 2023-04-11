@@ -59,18 +59,24 @@ class Trainer:
 
         for batch_idx, batch in enumerate(self.train_loader):
             inputs, targets = batch['img'], batch['category']
-            logging.info(f'Epoch: [{self.epoch + 1}/{self.n_epochs}] Step: [{batch_idx}/{len(self.train_loader)}.]')
+            logging.info(f'Epoch: [{self.epoch + 1}/{self.n_epochs}] Step: [{batch_idx}/{len(self.train_loader)}]')
             inputs, targets = inputs.to(self.device), targets.to(self.device)
             logging.debug(f'Inputs shape: {inputs.shape}, Targets shape: {targets.shape}')
             self.optimizer.zero_grad()
-            outputs, _, _ = self.model(inputs, targets.squeeze())
-            loss = self.criterion(outputs, targets.squeeze())
+            if targets.ndim > 1:
+                targets = targets.squeeze()
+                logging.debug(f'Targets shape: {targets.shape}')
+            outputs, _, _ = self.model(inputs, targets)
+            loss = self.criterion(outputs, targets)
             loss.backward()
             self.optimizer.step()
 
             train_loss += loss.item()
             _, predicted = outputs.max(1)
-            train_correct += predicted.eq(targets).sum().item()
+            logging.debug(f'Predicted: {predicted}')
+            correct = predicted.eq(targets).sum().item()
+            train_correct += correct
+            logging.debug(f'Correct preds: {correct}')
             total += targets.size(0)
             
             if self.experiment_tracker is not None:
