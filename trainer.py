@@ -102,12 +102,17 @@ class Trainer:
         with torch.no_grad():
             for batch_idx, batch in enumerate(self.val_loader):
                 inputs, targets = batch['img'], batch['category']
+                logging.info(f'Epoch: [{self.epoch + 1}/{self.n_epochs}] Validation Step: [{batch_idx}/{len(self.val_loader)}]')
                 inputs, targets = inputs.to(self.device), targets.to(self.device)
-                outputs = self.model(inputs)
+                outputs, _, _ = self.model(inputs, targets)
+                if targets.ndim > 1:
+                    targets = targets.squeeze()
                 loss = self.criterion(outputs, targets)
 
                 val_loss += loss.item()
                 _, predicted = outputs.max(1)
+                logging.debug(f'Validation predictions: {predicted}')
+                logging.debug(f'Targets: {targets}')
                 val_correct += predicted.eq(targets).sum().item()
                 total += targets.size(0)
                 
