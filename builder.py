@@ -3,6 +3,9 @@ import inspect
 import json
 import logging
 import os.path as osp
+from collections.abc import Mapping, MutableMapping
+from itertools import chain
+from operator import add
 
 import torch
 import torch.nn as nn
@@ -16,6 +19,18 @@ from trackers import TRACKERS
 from trainer import TRAINERS, Trainer
 from utils import prepare_data
 
+
+_FLAG_FIRST = object()
+
+def flattenDict(d, parent_key='', sep='_'):
+    items = []
+    for k, v in d.items():
+        new_key = parent_key + sep + k if parent_key else k
+        if isinstance(v, MutableMapping):
+            items.extend(flattenDict(v, new_key, sep=sep).items())
+        else:
+            items.append((new_key, v))
+    return dict(items)
 
 """
 Build a dictionary of optimizer classes available in PyTorch's 'optim' module.
@@ -169,7 +184,8 @@ def build_optimizer(cfg: dict,
 def build_trainer(cfg_file) -> Trainer:
     with open(cfg_file, 'r') as f:
         data = json.load(f)
-    
+    flat_data = flattenDict(data)
+    logging.debug(f'Flattened data: {flat_data}')
     model_cfg = data['model']
     logging.debug(f'Model configuration: {model_cfg}')
     logging.info('Building model...')
@@ -199,7 +215,7 @@ def build_trainer(cfg_file) -> Trainer:
     tracker_cfg = data['trainer']['trainer_cfg']['tracker']
     tracker = TRACKERS[tracker_cfg](project_name='fashion-retrieval',
                                     experiment_name='base-pre-train')
-    tracker.log_parameters(data)
+    tracker.log_parameters(flat_data)
     
     trainer_cfg = {
         'model': model,
