@@ -8,6 +8,7 @@ args = argparse.ArgumentParser()
 
 args.add_argument('--wandb_api_key', type=str, required=True)
 args.add_argument('--config', type=str, default='configs/resnet_cgd_base.json', required=True)
+args.parse_args()
 
 def main():
     os.environ['WANDB_API_KEY'] = args.wandb_api_key
