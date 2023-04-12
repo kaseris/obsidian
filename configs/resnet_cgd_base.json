@@ -40,7 +40,7 @@
     "train_loader": {
         "type": "DataLoader",
         "loader_cfg": {
-            "batch_size": 32,
+            "batch_size": 256,
             "sampler": null,
             "shuffle": true
         }
@@ -48,7 +48,7 @@
     "val_loader": {
         "type": "DataLoader",
         "loader_cfg": {
-            "batch_size": 32,
+            "batch_size": 256,
             "sampler": null,
             "shuffle": false
         }
