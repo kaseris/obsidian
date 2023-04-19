@@ -31,6 +31,13 @@ def resnet_50():
     """
     return models.resnet50(weights=torchvision.models.ResNet50_Weights.IMAGENET1K_V2)
 
+@BACKBONES.register('resnet_152')
+def resnet_152():
+    """
+    Returns a ResNet152 instance pretrained on ImageNet.
+    """
+    return models.resnet152(weights=torchvision.models.ResNet152_Weights.IMAGENET1K_V2)
+
 @BACKBONES.register('vit_b_16')
 def vit_b_16():
     """
