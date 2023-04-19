@@ -1,8 +1,10 @@
 import os
+import json
 import os.path as osp
 
 from typing import Dict
 
+import nltk
 import torch
 import torch.nn.functional as F
 from PIL import Image
@@ -208,4 +210,102 @@ class DeepFashionCategoryAttribute(Dataset):
     @property
     def n_classes(self):
         return len(self.CLASS_LABELS)
+    
+
+@DATASETS.register('fashioniq')
+class FashionIQ(Dataset):
+    """
+    A PyTorch dataset for the FashionIQ dataset, which consists of images and captions
+    describing fashion items, and includes a candidate image and a target image for each
+    item. This class takes the root directory of the dataset, the name of the JSON file
+    containing the data, a vocabulary object, and optional transforms as input.
+
+    Args:
+        root (str): Root directory of the FashionIQ dataset.
+        data_file_name (str): Name of the JSON file containing the data.
+        vocab (Vocabulary): A Vocabulary object that maps tokens to their corresponding
+            integer ids.
+        transform (optional, callable): A function/transform that takes in an PIL image
+            and returns a transformed version.
+        return_target (optional, bool): Whether to return the target image and ASIN along
+            with the candidate image and captions (default True).
+
+    Methods:
+        __getitem__(self, index): Returns a single data pair, which consists of a
+            target image, a candidate image, a caption, and a dictionary containing the
+            target ASIN, candidate ASIN, and the original caption texts.
+        __len__(self): Returns the number of items in the dataset.
+
+    Example:
+        To use this dataset, first create a vocabulary object and specify the root directory
+        and the name of the data file:
+
+        >>> vocab = Vocabulary(special_tokens=['<pad>', '<start>', '<end>', '<unk>'])
+        >>> root = '/path/to/FashionIQ/dataset/'
+        >>> data_file_name = 'train.json'
+        >>> dataset = FashionIQ(root, data_file_name, vocab)
+
+        To access a specific item in the dataset, use the __getitem__ method:
+
+        >>> target_image, candidate_image, caption, metadata = dataset[0]
+
+        To iterate over the entire dataset, use a DataLoader:
+
+        >>> dataloader = DataLoader(dataset, batch_size=32, shuffle=True)
+        >>> for batch_idx, (target_images, candidate_images, captions, metadata) in enumerate(dataloader):
+        ...     # Do something with the batch
+    """
+    def __init__(self, root, data_file_name, vocab, transform=None, return_target=True):
+        """Set the path for images, captions and vocabulary wrapper.
+        
+        Args:
+            root: image directory.
+            data: index file name.
+            transform: image transformer.
+            vocab: pre-processed vocabulary.
+        """
+        self.root = root
+        with open(data_file_name, 'r') as f:
+            self.data = json.load(f)
+        self.ids = range(len(self.data))
+        self.vocab = vocab
+        self.transform = transform
+        self.return_target = return_target
+
+    def __getitem__(self, index):
+        """Returns one data pair (image and concatenated captions)."""
+        data = self.data
+        vocab = self.vocab
+        id = self.ids[index]
+
+        candidate_asin = data[id]['candidate']
+        candidate_img_name = candidate_asin + '.jpg'
+        candidate_image = Image.open(os.path.join(self.root, candidate_img_name)).convert('RGB')
+        if self.transform is not None:
+            candidate_image = self.transform(candidate_image)
+
+        if self.return_target:
+            target_asin = data[id]['target']
+            target_img_name = target_asin + '.jpg'
+            target_image = Image.open(os.path.join(self.root, target_img_name)).convert('RGB')
+            if self.transform is not None:
+                target_image = self.transform(target_image)
+        else:
+            target_image = candidate_image
+            target_asin = ''
+
+        caption_texts = data[id]['captions']
+        # Convert caption (string) to word ids.
+        tokens = nltk.tokenize.word_tokenize(str(caption_texts[0]).lower()) + ['<and>'] + \
+                nltk.tokenize.word_tokenize(str(caption_texts[1]).lower())
+        caption = []
+        caption.append(vocab('<start>'))
+        caption.extend([vocab(token) for token in tokens])
+        caption.append(vocab('<end>'))
+        caption = torch.Tensor(caption)
+
+        return target_image, candidate_image, caption, {'target': target_asin, 'candidate': candidate_asin, 'caption': caption_texts}
+
+    def __len__(self):
+        return len(self.ids)
     
