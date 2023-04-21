@@ -308,4 +308,107 @@ class FashionIQ(Dataset):
 
     def __len__(self):
         return len(self.ids)
+
+@DATASETS.register('deepfashion2')
+class DeepFashion2(data.Dataset):
+    """
+    A PyTorch dataset for the DeepFashion2 benchmark.
+
+    Args:
+        root (str): The root directory of the dataset.
+        split (str): The dataset split to use. It can be 'train', 'val', or 'test'.
+        transforms (callable, optional): A function/transform that takes in an PIL image and a
+            target dict, and returns a transformed version of them. Default: None.
+
+    Attributes:
+        root (str): The root directory of the dataset.
+        split (str): The dataset split being used.
+        transforms (callable): The transform function being used, if any.
+        imgs (list): A list of the paths to the images in the dataset split.
+        annos (list): A list of the paths to the annotations in the dataset split.
+
+    Methods:
+        __getitem__(self, idx): Retrieves the idx-th sample from the dataset.
+        _read_anno(self, anno_filename): Reads the annotations from the specified file.
+        _get_garment_annos(self, anno): Retrieves the garment annotations for each garment from the specified
+            annotation dict.
+        _get_boxes(self, anno): Retrieves the bounding boxes from the specified annotation dict.
+        _create_mask(self, anno, img_size): Creates a mask image from the specified annotation dict
+            and image size.
+        __len__(self): Returns the number of samples in the dataset split.
+    """
+    def __init__(self, root, split, transforms=None):
+        self.root = root
+        self.split = split
+        self.transforms = transforms
+        
+        imgs_path = osp.join(self.root, self.split, 'image')
+        annos_path = osp.join(self.root, self.split, 'annos')
+        
+        self.imgs = sorted(list(map(lambda x: os.path.join(imgs_path, x),
+                                    os.listdir(os.path.join(self.root, self.split, 'image')))))
+        self.annos = sorted(list(map(lambda x: os.path.join(annos_path, x),
+                                     os.listdir(os.path.join(self.root, self.split, 'annos')))))
+    def __getitem__(self, idx):
+        img = Image.open(self.imgs[idx]).convert("RGB")
+        W, H = img.size
+        anno = self._read_anno(self.annos[idx])
+        mask = self._create_mask(anno, (W, H))
+        mask_np = np.array(mask)
+        obj_ids = np.unique(mask_np)
+        # first id is the bg, so we remove it
+        obj_ids = obj_ids[1:]
+        masks = mask_np == obj_ids[:, None, None]
+        num_objs = len(obj_ids)
+        boxes = torch.as_tensor(self._get_boxes(anno), dtype=torch.float32)
+        labels = [anno[item].get('category_id') for item in self._get_garment_annos(anno)]
+        
+        area = (boxes[:, 3] - boxes[:, 1]) * (boxes[:, 2] - boxes[:, 0]) 
+        
+        labels = torch.as_tensor(labels, dtype=torch.int64)
+        masks = torch.as_tensor(masks, dtype=torch.uint8)
+        is_crowd = torch.zeros((num_objs,), dtype=torch.int64)
+        
+        target = {}
+        target['boxes'] = boxes
+        target['labels'] = labels
+        target['masks'] = masks
+        target['image_id'] = torch.tensor([idx])
+        target['area'] = area
+        target['iscrowd'] = is_crowd
+
+        if self.transforms is not None:
+            img, target = self.transforms(img, target)
+
+        return img, target
+        
+    def _read_anno(self, anno_filename):
+        with open(anno_filename, 'r') as f:
+            anno = json.load(f)
+        return anno
     
+    def _get_garment_annos(self, anno):
+        items = list(filter(lambda x: 'item' in x, anno.keys()))
+        return sorted(items)
+    
+    def _get_boxes(self, anno):
+        boxes = []
+        for item in self._get_garment_annos(anno):
+            box = anno[item].get('bounding_box')
+            boxes.append(box)
+        return boxes
+        
+    def _create_mask(self, anno, img_size):
+        mask = Image.new('L', img_size, 0)
+        for item in self._get_garment_annos(anno):
+            segmentation_mask = anno[item]['segmentation']
+            W, H = img.size
+            cat_id = anno[item].get('category_id')
+            for polygon in segmentation_mask:
+                polygon = polygon = np.array(polygon).reshape(-1, 2)
+                ImageDraw.Draw(mask).polygon(tuple(map(tuple, polygon)), outline=cat_id, fill=cat_id)
+                mask_pil = mask
+        return mask_pil            
+    
+    def __len__(self):
+        return len(self.imgs)
