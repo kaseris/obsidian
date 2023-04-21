@@ -314,30 +314,44 @@ class FashionIQ(Dataset):
 @DATASETS.register('deepfashion2')
 class DeepFashion2(Dataset):
     """
-    A PyTorch dataset for the DeepFashion2 benchmark.
+    A PyTorch dataset for the DeepFashion2 benchmark. The dataset implementation is similar to the
+    implementation of the PennFudanPed dataset, as demonstrated in (https://pytorch.org/tutorials/intermediate/torchvision_tutorial.html).
+    
+    The `__getitem__` method should return:
+    
+    image: a PIL Image of size (H, W)
+    target: a dict containing the following fields
+        `boxes` (`FloatTensor[N, 4]`): the coordinates of the `N` bounding boxes in `[x0, y0, x1, y1]` format, ranging from `0` to `W` and `0` to `H`
+        `labels` (`Int64Tensor[N]`): the label for each bounding box
+        `image_id` (`Int64Tensor[1]`): an image identifier. It should be unique between all the images in the dataset, and is used during evaluation
+        `area` (`Tensor[N]`): The area of the bounding box. This is used during evaluation with the COCO metric, to separate the metric scores between small, medium and large boxes.
+        `iscrowd` (`UInt8Tensor[N]`): instances with `iscrowd=True` will be ignored during evaluation.
+        (optionally) `masks` (`UInt8Tensor[N, H, W]`): The segmentation masks for each one of the objects
+        (optionally) `keypoints` (`FloatTensor[N, K, 3]`): For each one of the N objects, it contains the K keypoints in `[x, y, visibility]` format, defining the object. `visibility=0` means that the keypoint is not visible. Note that for data augmentation, the notion of flipping a keypoint is dependent on the data representation, and you should probably adapt references/detection/transforms.py for your new keypoint representation
+
 
     Args:
-        root (str): The root directory of the dataset.
-        split (str): The dataset split to use. It can be 'train', 'val', or 'test'.
-        transforms (callable, optional): A function/transform that takes in an PIL image and a
+        `root (str)`: The root directory of the dataset.
+        `split (str)`: The dataset split to use. It can be 'train', 'val', or 'test'.
+        `transforms` (callable, optional): A function/transform that takes in an PIL image and a
             target dict, and returns a transformed version of them. Default: None.
 
     Attributes:
-        root (str): The root directory of the dataset.
-        split (str): The dataset split being used.
-        transforms (callable): The transform function being used, if any.
-        imgs (list): A list of the paths to the images in the dataset split.
-        annos (list): A list of the paths to the annotations in the dataset split.
+`        `root` (`str`): The root directory of the dataset.
+`        `split` (`str`): The dataset split being used.
+        `transforms` (`callable`): The transform function being used, if any.
+        `imgs` (`list`): A list of the paths to the images in the dataset split.
+        `annos` (`list`): A list of the paths to the annotations in the dataset split.
 
     Methods:
-        __getitem__(self, idx): Retrieves the idx-th sample from the dataset.
-        _read_anno(self, anno_filename): Reads the annotations from the specified file.
-        _get_garment_annos(self, anno): Retrieves the garment annotations for each garment from the specified
+        `__getitem__(self, idx)`: Retrieves the `idx`-th sample from the dataset.
+        `_read_anno(self, anno_filename)`: Reads the annotations from the specified file.
+        `_get_garment_annos(self, anno)`: Retrieves the garment annotations for each garment from the specified
             annotation dict.
-        _get_boxes(self, anno): Retrieves the bounding boxes from the specified annotation dict.
-        _create_mask(self, anno, img_size): Creates a mask image from the specified annotation dict
+        `_get_boxes(self, anno)`: Retrieves the bounding boxes from the specified annotation dict.
+        `_create_mask(self, anno, img_size)`: Creates a mask image from the specified annotation dict
             and image size.
-        __len__(self): Returns the number of samples in the dataset split.
+        `__len__(self)`: Returns the number of samples in the dataset split.
     """
     def __init__(self, root, split, transforms=None):
         self.root = root
