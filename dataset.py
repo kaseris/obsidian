@@ -4,10 +4,12 @@ import os.path as osp
 
 from typing import Dict
 
+import numpy as np
+
 import nltk
 import torch
 import torch.nn.functional as F
-from PIL import Image
+from PIL import Image, ImageDraw
 from torch.utils.data import Dataset
 from torchvision import transforms
 
@@ -310,7 +312,7 @@ class FashionIQ(Dataset):
         return len(self.ids)
 
 @DATASETS.register('deepfashion2')
-class DeepFashion2(data.Dataset):
+class DeepFashion2(Dataset):
     """
     A PyTorch dataset for the DeepFashion2 benchmark.
 
@@ -402,7 +404,7 @@ class DeepFashion2(data.Dataset):
         mask = Image.new('L', img_size, 0)
         for item in self._get_garment_annos(anno):
             segmentation_mask = anno[item]['segmentation']
-            W, H = img.size
+            W, H = img_size
             cat_id = anno[item].get('category_id')
             for polygon in segmentation_mask:
                 polygon = polygon = np.array(polygon).reshape(-1, 2)
