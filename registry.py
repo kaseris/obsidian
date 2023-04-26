@@ -38,7 +38,7 @@ class Registry:
 
         return inner_wrapper
 
-    def __getitem__(cls, item: str) -> Union[Callable, nn.Module]:
+    def __getitem__(self, item: str) -> Union[Callable, nn.Module]:
         """
         Get the registered class with the specified name.
 
