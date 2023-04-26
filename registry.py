@@ -7,10 +7,9 @@ class Registry:
 
     Allows for fast instantiation of modules using string names provided in configuration files.
     """
+    def __init__(self):
+        self.registry = {}
 
-    registry = dict()
-
-    @classmethod
     def register(cls, name: str) -> Callable:
         """
         Decorator method for registering a class in the registry.
@@ -49,4 +48,4 @@ class Registry:
         Returns:
             Callable: The registered class.
         """
-        return cls.registry[item]
+        return self.registry[item]
