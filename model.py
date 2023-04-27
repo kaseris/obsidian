@@ -1,5 +1,8 @@
+import math
 from abc import ABC, abstractmethod
-from typing import Union, Tuple, Optional
+import logging
+import sys
+from typing import Union, Tuple, Optional, Dict
 
 import torch
 import torch.nn as nn
@@ -9,6 +12,8 @@ import torchvision.models as models
 
 import config
 
+from coco.utils import reduce_dict
+from detection import build_detector
 from pooling import DESCRIPTORS, POOLING
 from registry import Registry
 
@@ -179,11 +184,11 @@ class OBSModule(ABC, nn.Module):
         pass
     
     @abstractmethod
-    def training_step(self, x, y):
+    def training_step(self, *args, **kwargs):
         pass
     
     @abstractmethod
-    def validation_step(self, x, y):
+    def validation_step(self, *args, **kwargs):
         pass
 
 
@@ -370,4 +375,75 @@ class ResNetDeepFashion(OBSModule):
             loss = F.cross_entropy(preds, target=targets)
             return preds, embeddings, loss
         return preds, embeddings, loss
+
+@MODELS.register('FashionDetector')
+class FashionDetector(OBSModule):
+    def __init__(self, **kwargs) -> None:
+        super().__init__()
+        logging.debug(f'Initializing FashionDetector with kwargs: {kwargs}')
+        if 'debug' in kwargs['cfg']:
+            setattr(self, 'debug', kwargs['cfg']['debug'])
+        self.module = build_detector(**kwargs)
+        
+    def forward(self):
+        pass
+
+    def validation_step(self):
+        pass
+
+    def training_step(self,
+                      x: torch.Tensor,
+                      targets,
+                      device,
+                      optimizer: torch.optim.Optimizer,
+                      scaler: torch.cuda.amp.grad_scaler.GradScaler = None,
+                      lr_scheduler: torch.optim.lr_scheduler.LRScheduler = None):
+        logging.debug(f'Training step with device: {device}')
+        logging.debug(f'Training step with scaler: {scaler}')
+        logging.debug(f'Training step with lr_scheduler: {lr_scheduler}')
+        self.module.train()
+        images = list(img.to(device) for img in x)
+        targets = [{k: v.to(device) for k, v in t.items()} for t in targets]
+        with torch.cuda.amp.autocast(enabled=True):
+            loss_dict = self.module(images, targets)
+            losses = sum(loss for loss in loss_dict.values())
+        
+        # Reduce losses over all GPUs
+        loss_dict_reduced = reduce_dict(loss_dict)
+        losses_reduced = sum(loss for loss in loss_dict_reduced.values())
+        logging.debug(f'Training loss: {losses_reduced.item()}')
+        logging.debug(loss_dict_reduced)
+        loss_value = losses_reduced.item()
+
+        # Check if we have an unbounded loss value.
+        # If we do, we will not perform the backward pass.
+        if not torch.isfinite(torch.tensor(loss_value)):
+            if hasattr(self, 'debug') and self.debug:
+                self.module.eval()
+                predictions = self.module(images)
+                logging.info('Saving debug data')
+                torch.save({'x': x, 'targets': targets, 'predictions': predictions}, 'debug.pt')
+            logging.error(f'Loss is {loss_value}')
+            logging.info(loss_dict_reduced)
+            sys.exit(1)
+        
+        optimizer.zero_grad()
+        if scaler is not None:
+            logging.debug('Invoking backward with scaler')
+            scaler.scale(losses).backward()
+            scaler.step(optimizer)
+            scaler.update()
+        else:
+            logging.debug('Invoking backward without scaler')
+            losses.backward()
+            optimizer.step()
+        
+        if lr_scheduler is not None:
+            lr_scheduler.step()
+        
+        return loss_dict_reduced
+
+    @property
+    def params(self):
+        return [p for p in self.module.parameters() if p.requires_grad]
     
