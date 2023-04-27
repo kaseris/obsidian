@@ -1,4 +1,4 @@
-import math
+import time
 from abc import ABC, abstractmethod
 import logging
 import sys
@@ -12,6 +12,7 @@ import torchvision.models as models
 
 import config
 
+from coco.coco_eval import CocoEvaluator
 from coco.utils import reduce_dict
 from detection import build_detector
 from pooling import DESCRIPTORS, POOLING
@@ -123,6 +124,7 @@ class LinearClassificationHead(nn.Module):
                 nn.init.normal_(m.weight, 0, 0.01)
                 nn.init.constant_(m.bias, 0)
 
+
 @CLS_HEADS.register('cgd_head')
 class CombinedGlobalDescriptorClassHead(nn.Module):
     """
@@ -177,6 +179,7 @@ class CombinedGlobalDescriptorClassHead(nn.Module):
             elif isinstance(m, nn.Linear):
                 nn.init.normal_(m.weight, 0, 0.01)
                 nn.init.constant_(m.bias, 0)
+
 
 class OBSModule(ABC, nn.Module):
     @abstractmethod
@@ -378,6 +381,23 @@ class ResNetDeepFashion(OBSModule):
 
 @MODELS.register('FashionDetector')
 class FashionDetector(OBSModule):
+    """
+    Class for training, evaluating and validating a fashion object detection model.
+    
+    Attributes:
+        module (nn.Module): the object detection model.
+        
+    Methods:
+        __init__(self, **kwargs): initializes the FashionDetector instance.
+        
+        forward(self): a placeholder function for model inference.
+
+        validation_step(self, images, targets, device): performs a single validation step.
+
+        training_step(self, x, targets, device, optimizer, scaler, lr_scheduler): performs a single training step.
+
+        params(self): returns the model's trainable parameters.
+    """
     def __init__(self, **kwargs) -> None:
         super().__init__()
         logging.debug(f'Initializing FashionDetector with kwargs: {kwargs}')
@@ -387,9 +407,38 @@ class FashionDetector(OBSModule):
         
     def forward(self):
         pass
+    
+    @torch.inference_mode()
+    def validation_step(self,
+                        images,
+                        targets,
+                        device):
+        """
+        Performs a single validation step.
+        
+        Args:
+            images (list of torch.Tensor): the input images.
 
-    def validation_step(self):
-        pass
+            targets (list of torch.Tensor): the ground truth targets for the given images.
+            
+            device (str): the device to perform inference on.
+            
+        Returns:
+            res (dict): a dictionary with the model's outputs for each input image.
+        """
+        self.module.eval()
+        images = list(img.to(device) for img in images)
+
+        if torch.cuda.is_available():
+            torch.cuda.synchronize()
+        
+        model_time = time.time()
+        outputs = self.module(images)
+        outputs = [{k: v.to('cpu') for k, v in t.items()} for t in outputs]
+        model_time = time.time() - model_time
+        logging.debug(f'Model inference time: {model_time}')
+        res = {target["image_id"].item(): output for target, output in zip(targets, outputs)}
+        return res
 
     def training_step(self,
                       x: torch.Tensor,
@@ -398,6 +447,25 @@ class FashionDetector(OBSModule):
                       optimizer: torch.optim.Optimizer,
                       scaler: torch.cuda.amp.grad_scaler.GradScaler = None,
                       lr_scheduler: torch.optim.lr_scheduler.LRScheduler = None):
+        """
+        Performs a single training step.
+        
+        Args:
+            x (torch.Tensor): the input images.
+
+            targets (list of torch.Tensor): the ground truth targets for the given images.
+
+            device (str): the device to perform inference on.
+
+            optimizer (torch.optim.Optimizer): the optimizer instance to be used for training.
+
+            scaler (torch.cuda.amp.grad_scaler.GradScaler): the scaler to be used for training.
+
+            lr_scheduler (torch.optim.lr_scheduler.LRScheduler): the learning rate scheduler to be used for training.
+            
+        Returns:
+            loss_dict_reduced (dict): a dictionary with the model's reduced losses over all GPUs.
+        """
         logging.debug(f'Training step with device: {device}')
         logging.debug(f'Training step with scaler: {scaler}')
         logging.debug(f'Training step with lr_scheduler: {lr_scheduler}')
