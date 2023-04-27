@@ -1,15 +1,19 @@
 dataset:
-  name: 'deepfashion2'
+  name: deepfashion2
   cfg:
-    split: 'train'
+    split: train
+    transforms:
+      name: DeepFashionObjectDetectionDefaultTransform
+      cfg:
+        train: true
 model:
-  name: 'fasterrcnn_resnet50_fpn_v2'
+  name: fasterrcnn_resnet50_fpn_v2
   cfg:
     num_classes: 14
     weights:
-      name: 'FasterRCNN_ResNet50_FPN_V2_Weights'
-      checkpoint: 'COCO_V1'
+      name: FasterRCNN_ResNet50_FPN_V2_Weights
+      checkpoint: COCO_V1
     weights_backbone:
-      name: 'ResNet50_Weights'
-      checkpoint: 'IMAGENET1K_V2'
-    
+      name: ResNet50_Weights
+      checkpoint: IMAGENET1K_V2
+    debug: true
