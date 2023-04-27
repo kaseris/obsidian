@@ -14,12 +14,30 @@ from torch.utils.data import Dataset
 from torchvision import transforms
 
 import config
+
+import coco.transforms as T
 from registry import Registry
 from utils import prepare_data
 
 DATASETS = Registry()
 TRANSFORMS = Registry()
 
+
+@TRANSFORMS.register('DeepFashionObjectDetectionDefaultTransform')
+def deepfashion_object_detection_default_transform(**kwargs):
+    """
+    Returns a set of image transforms commonly used for training DeepFashion datasets.
+    """
+    train = kwargs.get('train')
+    transforms = []
+    # converts the image, a PIL image, into a PyTorch Tensor
+    transforms.append(T.PILToTensor())
+    transforms.append(T.ConvertImageDtype(dtype=torch.float))
+    if train:
+        # during training, randomly flip the training images
+        # and ground-truth for data augmentation
+        transforms.append(T.RandomHorizontalFlip(0.5))
+    return T.Compose(transforms)
 
 @TRANSFORMS.register('DeepFashion_default_tf')
 def deepfashion_default_transform():
