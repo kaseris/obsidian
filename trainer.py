@@ -24,7 +24,31 @@ class Trainer:
                  criterion: nn.Module,
                  device,
                  n_epochs: int,
+                 scaler: torch.cuda.amp.GradScaler = None,
                  experiment_tracker: ExperimentTracker = None):
+        """
+        A class to train and validate a PyTorch model
+        
+        Args:
+            model (nn.Module): PyTorch model to train and validate
+            train_loader (DataLoader): PyTorch DataLoader containing the training dataset
+            val_loader (DataLoader): PyTorch DataLoader containing the validation dataset
+            optimizer (Optimizer): PyTorch optimizer for training the model
+            criterion (Loss): PyTorch loss function for computing the training loss
+            device (str): device to run the computation on (e.g. 'cpu', 'cuda')
+            experiment_tracker (ExperimentTracker, optional): experiment tracker for logging training metrics (e.g. wandb)
+        """
+        self.model = model
+        self.train_loader = train_loader
+        self.val_loader = val_loader
+        self.optimizer = optimizer
+        self.criterion = criterion
+        self.device = device
+        self.experiment_tracker = experiment_tracker
+        self.n_epochs = n_epochs
+        self.epoch = 0
+        self.scaler = scaler
+        self.experiment_tracker = experiment_tracker
         """
         A class to train and validate a PyTorch model
         
