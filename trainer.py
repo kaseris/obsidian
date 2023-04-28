@@ -1,5 +1,8 @@
 import logging
 
+from typing import List, Optional, Tuple, Dict, Any
+
+
 import numpy as np
 
 import torch
@@ -7,6 +10,7 @@ import torch.nn as nn
 import torch.utils.data as data
 import torch.optim as optim
 
+from callbacks import CallbackList, Callback
 from model import OBSModule
 from registry import Registry
 from trackers import ExperimentTracker
@@ -24,8 +28,10 @@ class Trainer:
                  criterion: nn.Module,
                  device,
                  n_epochs: int,
+                 callbacks: Optional[List[Callback]] = None,
                  scaler: torch.cuda.amp.GradScaler = None,
-                 experiment_tracker: ExperimentTracker = None):
+                 experiment_tracker: ExperimentTracker = None,
+                 **kwargs):
         """
         A class to train and validate a PyTorch model
         
@@ -49,6 +55,8 @@ class Trainer:
         self.epoch = 0
         self.scaler = scaler
         self.experiment_tracker = experiment_tracker
+        if callbacks is not None:
+            self.callback_list = CallbackList(callbacks)
         """
         A class to train and validate a PyTorch model
         
