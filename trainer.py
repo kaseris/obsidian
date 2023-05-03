@@ -76,9 +76,12 @@ class Trainer:
                                            optimizer=self.optimizer,
                                            scaler=self.scaler,
                                            lr_scheduler=None)
-            print(res)
+
             if self.experiment_tracker is not None:
-                pass
+                log = {k: v.cpu().detach().numpy().item()
+                       for k, v in res.items()}
+                log['total_loss'] = sum(res.values())
+                self.experiment_tracker.log_metrics(log)
 
         return res
 
@@ -92,6 +95,11 @@ class Trainer:
         for batch_idx, batch in enumerate(self.val_loader):
             x, targets = batch
             res = self.model.validation_step(x, targets, device=self.device)
+
+            if self.experiment_tracker is not None:
+                log = {k: v.cpu().detach().numpy().item()
+                       for k, v in res.items()}
+                self.experiment_tracker.log_metrics(log)
         return res
 
     def train(self):
