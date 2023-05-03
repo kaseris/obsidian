@@ -1,5 +1,5 @@
 task: detection
-dataset:
+dataset_train:
   name: deepfashion2
   cfg:
     split: train
@@ -7,10 +7,18 @@ dataset:
       name: DeepFashionObjectDetectionDefaultTransform
       cfg:
         train: true
+dataset_val:
+  name: deepfashion2
+  cfg:
+    split: train
+    transforms:
+      name: DeepFashionObjectDetectionDefaultTransform
+      cfg:
+        train: false
 model:
   name: fasterrcnn_resnet50_fpn_v2
   cfg:
-    num_classes: 14
+    num_classes: 91
     weights:
       name: FasterRCNN_ResNet50_FPN_V2_Weights
       checkpoint: COCO_V1
@@ -18,3 +26,27 @@ model:
       name: ResNet50_Weights
       checkpoint: IMAGENET1K_V2
     debug: true
+optimizer:
+  name: Adam
+  params: null
+  cfg:
+    lr: 0.0001
+    betas: [0.9, 0.999]
+    eps: 0.00000001
+train_loader:
+  type: DataLoader,
+  loader_cfg: 
+    batch_size: 2
+    sampler: null
+    shuffle: true
+val_loader:
+  type: DataLoader,
+  loader_cfg: 
+    batch_size: 1
+    sampler: null
+    shuffle: true
+trainer: 
+  type: simple-trainer
+  trainer_cfg:
+    n_epochs: 10
+    tracker: wandb
