@@ -1,3 +1,4 @@
+import os
 import sys
 import inspect
 import json
@@ -12,15 +13,22 @@ import torch.nn as nn
 from torch.utils.data import DataLoader
 import torch.optim as optim
 
-from dataset import DATASETS
+from dataset import DATASETS, TRANSFORMS
+from detection import DETECTORS
+from fileclient import read_file
 from losses import LOSSES
 from model import MODELS
 from trackers import TRACKERS
 from trainer import TRAINERS, Trainer
-from utils import prepare_data
+from utils import prepare_data, import_registry
 
 
 _FLAG_FIRST = object()
+NAME_2_TASK = {
+    'detection': 'FashionDetector',
+    'classification': ['model', 'MODELS']
+}
+
 
 def flattenDict(d, parent_key='', sep='_'):
     items = []
@@ -31,6 +39,7 @@ def flattenDict(d, parent_key='', sep='_'):
         else:
             items.append((new_key, v))
     return dict(items)
+
 
 """
 Build a dictionary of optimizer classes available in PyTorch's 'optim' module.
@@ -68,14 +77,27 @@ def build_model(cfg) -> nn.Module:
     >>> model = build_model(data['model'])
     >>> print(model)
     """
-    model_cfg = cfg['model_cfg']
-    model_type = cfg['type']
+    # TODO: Automatically infer whether the model is a detector or a classifier, etc. Done
+    # TODO: Separate classifiers and detectors.
+    task = cfg['task']
+    model_cfg = cfg['model']
+    model_cfg = model_cfg['cfg']
+    model_type = cfg['model']['name']
 
-    if model_type not in MODELS.registry.keys():
-        raise ValueError(f'Unsupported model type: `{model_type}`. '
-                         f'Must be one of \n{list(MODELS.registry.keys())}')
+    logging.debug(
+        f'The task is {task} and the requested model is {model_type}.')
+    module_name = NAME_2_TASK[task]
+    # registry = import_registry(
+    #     module_name=module_name, registry_name=registry_name)
+    # logging.debug(
+    #     f'The model registry has the keys {registry.registry.keys()}.')
+    # if model_type not in MODELS.registry.keys():
+    #     raise ValueError(f'Unsupported model type: `{model_type}`. '
+    #                      f'Must be one of \n{list(MODELS.registry.keys())}')
+    # module = registry.registry[model_type](**model_cfg)
+    model = MODELS[module_name](**cfg['model'])
+    return model
 
-    return MODELS[model_type](**model_cfg)
 
 def build_dataset(data: dict) -> torch.utils.data.Dataset:
     """
@@ -89,7 +111,7 @@ def build_dataset(data: dict) -> torch.utils.data.Dataset:
 
     Raises:
         ValueError: If `dataset_type` is not found in the DATASETS registry.
-        
+
     Example:
     ```
     if __name__ == '__main__':
@@ -103,26 +125,29 @@ def build_dataset(data: dict) -> torch.utils.data.Dataset:
     dataset_keys = list(filter(lambda x: 'dataset' in x, data.keys()))
     ret = dict()
     logging.info(f'Building datasets.')
-    logging.debug(f'Dataset keys: {" ,".join(k for k in dataset_keys)}')
+    logging.debug(f'Dataset keys: {", ".join(k for k in dataset_keys)}')
     for key in dataset_keys:
         logging.info(f'Building dataset based on `{key}` dataset')
-        dataset_cfg = data[key]['dataset_cfg']
-        dataset_type = data[key]['type']
+        dataset_cfg = data[key]['cfg']
+        dataset_type = data[key]['name']
         logging.debug(f'Config:\n {dataset_cfg}')
-        
+
         if dataset_type not in DATASETS.registry.keys():
             raise ValueError(f'Unsupported model type: `{dataset_type}`. '
-                            f'Must be one of \n{list(DATASETS.registry.keys())}')
-        
-        if key == 'train_dataset':
-            logging.debug('Calling `prepare_data` function.')
-            splits, annotations = prepare_data()
-            logging.info('Data preparation done.')
-        dataset_cfg['split_info'] = splits
-        dataset_cfg['garment_annotations'] = annotations
-        ret[key] = DATASETS[dataset_type](**dataset_cfg)
-        
+                             f'Must be one of \n{list(DATASETS.registry.keys())}')
+        dataset_cfg['transforms'] = TRANSFORMS[dataset_cfg['transforms']['name']](
+            **dataset_cfg['transforms']['cfg'])
+        # if key == 'train_dataset':
+        #     logging.debug('Calling `prepare_data` function.')
+        #     splits, annotations = prepare_data()
+        #     logging.info('Data preparation done.')
+        # dataset_cfg['split_info'] = splits
+        # dataset_cfg['garment_annotations'] = annotations
+        ret[key] = DATASETS[dataset_type](
+            root=os.environ['DATASET_DIR'], **dataset_cfg)
+
     return ret
+
 
 def build_optimizer(cfg: dict,
                     model: nn.Module) -> optim.Optimizer:
@@ -162,10 +187,10 @@ def build_optimizer(cfg: dict,
         )
     """
     logging.info('Building optimizer.')
-    optimizer_type = cfg['type']
-    optimizer_cfg = cfg['optimizer_cfg']
+    optimizer_type = cfg['name']
+    optimizer_cfg = cfg['cfg']
     logging.debug(f'Config:\n{optimizer_cfg}')
-    logging.debug(f'Selected modules:\n{cfg["params"]}')
+    # logging.debug(f'Selected modules:\n{cfg["params"]}')
     trainable_params = []
     if cfg['params'] is not None:
         for name, module in model.named_modules():
@@ -173,50 +198,55 @@ def build_optimizer(cfg: dict,
                 logging.debug(f'Module: {module}')
                 optimizer_cfg['params'] = module.parameters()
     else:
-        trainable_params = list(filter(lambda x: x.requires_grad, model.parameters()))
-    logging.debug(f'Trainable params: {optimizer_cfg["params"]}')
+        optimizer_cfg["params"] = model.params
     if optimizer_type not in OPTIMIZERS.keys():
-            raise ValueError(f'Unsupported model type: `{optimizer_type}`. '
-                            f'Must be one of \n{list(OPTIMIZERS.keys())}')
-            
+        raise ValueError(f'Unsupported model type: `{optimizer_type}`. '
+                         f'Must be one of \n{list(OPTIMIZERS.keys())}')
+
     return OPTIMIZERS[optimizer_type](**optimizer_cfg)
 
+
 def build_trainer(cfg_file) -> Trainer:
-    with open(cfg_file, 'r') as f:
-        data = json.load(f)
+    data = read_file(cfg_file)
     flat_data = flattenDict(data)
     logging.debug(f'Flattened data: {flat_data}')
     model_cfg = data['model']
     logging.debug(f'Model configuration: {model_cfg}')
+    logging.debug(f'Task: {data["task"]}')
     logging.info('Building model...')
-    model = build_model(cfg=model_cfg)
+    model = build_model(cfg=data)
     logging.info('Building datasets...')
     dataset_dict = build_dataset(data=data)
-    
+
     logging.info('Creating optimizers.')
     optimizer_cfg = data['optimizer']
     logging.debug(f'Optimizer configuration: {optimizer_cfg}')
     opt = build_optimizer(cfg=optimizer_cfg, model=model)
-    
+
     # Needs to be implemented under the factory design pattern
     logging.info('Creating data loaders.')
-    train_loader = DataLoader(dataset=dataset_dict['train_dataset'], **data['train_loader']['loader_cfg'])
-    val_loader = DataLoader(dataset=dataset_dict['val_dataset'], **data['val_loader']['loader_cfg'])
+    train_loader = DataLoader(
+        dataset=dataset_dict['dataset_train'], **data['train_loader']['loader_cfg'],
+        collate_fn=lambda x: tuple(zip(*x)))
+    val_loader = DataLoader(
+        dataset=dataset_dict['dataset_val'], **data['val_loader']['loader_cfg'],
+        collate_fn=lambda x: tuple(zip(*x)))
     # ========================================================
-    
+
     trainer_type = data['trainer']['type']
     logging.debug(f'Trainer type: {trainer_type}')
     trainer_cfg = data['trainer']['trainer_cfg']
     logging.debug(f'Trainer configuration: {trainer_cfg}')
-    criterion = LOSSES[data['trainer']['trainer_cfg']['criterion']]()
+    # criterion = LOSSES[data['trainer']['trainer_cfg']['criterion']]()
+    criterion = None
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     logging.debug(f'Device: {device}')
-    
+
     tracker_cfg = data['trainer']['trainer_cfg']['tracker']
     tracker = TRACKERS[tracker_cfg](project_name='fashion-retrieval',
                                     experiment_name='base-pre-train')
     tracker.log_parameters(flat_data)
-    
+
     trainer_cfg = {
         'model': model,
         'train_loader': train_loader,
@@ -227,13 +257,11 @@ def build_trainer(cfg_file) -> Trainer:
         'experiment_tracker': tracker,
         'n_epochs': data['trainer']['trainer_cfg']['n_epochs']
     }
-    
+
     return TRAINERS[trainer_type](**trainer_cfg)
 
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.DEBUG)
-    config_path = osp.join('configs', 'resnet_cgd_base.json')
-    trainer = build_trainer(config_path)
-    trainer.train()
-    
+    cfg = read_file('configs/detection/base.yaml')
+    build_model(cfg=cfg)
