@@ -7,7 +7,7 @@ parser = argparse.ArgumentParser(description='Train interface')
 
 parser.add_argument('--wandb_api_key', type=str, required=True)
 parser.add_argument('--config', type=str,
-                  default='configs/resnet_cgd_base.json', required=True)
+                    default='configs/detection/base.yaml', required=True)
 parser.add_argument('--dataset_path', type=str, required=True)
 args = parser.parse_args()
 
