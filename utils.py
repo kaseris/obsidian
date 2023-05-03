@@ -1,9 +1,17 @@
+import importlib
 import os.path as osp
 
 from os import PathLike
 from typing import Callable, Union
 
 import config
+
+
+def import_registry(module_name: str, registry_name):
+    module = importlib.import_module(module_name)
+    registry = getattr(module, registry_name)
+    return registry
+
 
 def read_file_helper(filename):
     def decorator(func):
@@ -39,10 +47,12 @@ def prepare_splits(data, *args, **kwargs) -> dict[str, list[str]]:
               'test': []}
     for ln in data:
         _split = ln.strip().split(' ')[-1]
-        _img_path = ln.strip().split(' ')[0].replace('A-line_Dress', 'A-Line_Dress')
+        _img_path = ln.strip().split(' ')[0].replace(
+            'A-line_Dress', 'A-Line_Dress')
         splits[_split].append(_img_path)
     return splits
-    
+
+
 @read_file_helper(config.DEEP_FASHION_CLOTHING_LIST_CAT_IMG_PATH)
 def prepare_categories(data, *args, **kwargs):
     """
@@ -62,10 +72,12 @@ def prepare_categories(data, *args, **kwargs):
     """
     annotations = args[0]
     for ln in data:
-        _path = ln.strip().split(' ')[0].replace('A-line_Dress', 'A-Line_Dress')
+        _path = ln.strip().split(' ')[0].replace(
+            'A-line_Dress', 'A-Line_Dress')
         _cat = ln.strip().split(' ')[-1]
         annotations[_path] = {'category': int(_cat)}
     return annotations
+
 
 @read_file_helper(config.DEEP_FASHION_CLOTHING_LIST_BBOX_IMG_PATH)
 def prepare_bboxes(data, *args, **kwargs):
@@ -87,11 +99,13 @@ def prepare_bboxes(data, *args, **kwargs):
     """
     annotations = args[0]
     for ln in data:
-        _path = ln.strip().split(' ')[0].replace('A-line_Dress', 'A-Line_Dress')
+        _path = ln.strip().split(' ')[0].replace(
+            'A-line_Dress', 'A-Line_Dress')
         _bbox = ln.strip().split(' ')[-4:]
         _bbox = list(map(lambda x: int(x), _bbox))
         annotations[_path]['bbox'] = _bbox
     return annotations
+
 
 @read_file_helper(config.DEEP_FASHION_CLOTHING_LIST_ATT_IMG_PATH)
 def prepare_attributes(data, *args, **kwargs):
@@ -114,12 +128,14 @@ def prepare_attributes(data, *args, **kwargs):
     """
     annotations = args[0]
     for ln in data:
-        _path = ln.strip().split(' ')[0].replace('A-line_Dress', 'A-Line_Dress')
+        _path = ln.strip().split(' ')[0].replace(
+            'A-line_Dress', 'A-Line_Dress')
         _atts = ln.strip().split(' ')[-1000:]
         _atts = [el if el != '' else '-1' for el in _atts]
         _atts = list(map(lambda x: int(x), _atts))
         annotations[_path]['attributes'] = _atts
     return annotations
+
 
 def prepare_data():
     """
@@ -145,4 +161,3 @@ def prepare_data():
     garment_annos = prepare_bboxes(garment_annos)
     garment_annos = prepare_attributes(garment_annos)
     return splits, garment_annos
-    
