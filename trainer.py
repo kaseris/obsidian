@@ -25,9 +25,9 @@ class Trainer:
                  train_loader: data.DataLoader,
                  val_loader: data.DataLoader,
                  optimizer: optim.Optimizer,
-                 criterion: nn.Module,
                  device,
                  n_epochs: int,
+                 criterion: nn.Module = None,
                  callbacks: Optional[List[Callback]] = None,
                  scaler: torch.cuda.amp.GradScaler = None,
                  experiment_tracker: ExperimentTracker = None,
@@ -76,11 +76,11 @@ class Trainer:
                                            optimizer=self.optimizer,
                                            scaler=self.scaler,
                                            lr_scheduler=None)
-
+            print(res)
             if self.experiment_tracker is not None:
                 pass
 
-            return res
+        return res
 
     def validate_epoch(self, epoch):
         """
@@ -92,7 +92,7 @@ class Trainer:
         for batch_idx, batch in enumerate(self.val_loader):
             x, targets = batch
             res = self.model.validation_step(x, targets, device=self.device)
-            return res
+        return res
 
     def train(self):
         """
@@ -102,15 +102,14 @@ class Trainer:
             epochs (int): number of epochs to train the model
         """
         self.model.to(self.device)
-        self.criterion.to(self.device)
-        self.callback_list.on_train_begin()
+        # self.callback_list.on_train_begin()
         for epoch in range(self.n_epochs):
-            self.callback_list.on_epoch_begin(epoch)
+            # self.callback_list.on_epoch_begin(epoch)
             self.epoch = epoch
             res = self.train_epoch(epoch)
             result = self.validate_epoch(epoch)
-            self.callback_list.on_epoch_end(epoch,
-                                            result=result, summarize=True)
+            # self.callback_list.on_epoch_end(epoch,
+            #                                 result=result, summarize=True)
 
             if self.experiment_tracker is not None:
                 pass
