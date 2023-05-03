@@ -1,3 +1,4 @@
+task: detection
 dataset:
   name: deepfashion2
   cfg:
