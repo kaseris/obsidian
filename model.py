@@ -30,6 +30,7 @@ def resnet_18():
     """
     return models.resnet18(weights=torchvision.models.ResNet18_Weights.IMAGENET1K_V1)
 
+
 @BACKBONES.register('resnet_50')
 def resnet_50():
     """
@@ -37,12 +38,14 @@ def resnet_50():
     """
     return models.resnet50(weights=torchvision.models.ResNet50_Weights.IMAGENET1K_V2)
 
+
 @BACKBONES.register('resnet_152')
 def resnet_152():
     """
     Returns a ResNet152 instance pretrained on ImageNet.
     """
     return models.resnet152(weights=torchvision.models.ResNet152_Weights.IMAGENET1K_V2)
+
 
 @BACKBONES.register('vit_b_16')
 def vit_b_16():
@@ -67,7 +70,7 @@ class ClassificationHead(nn.Module):
         embedding = x
         out_cls = self.cls_head(embedding)
         return out_cls, embedding
-    
+
     def init_weights(self):
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
@@ -81,7 +84,7 @@ class ClassificationHead(nn.Module):
             elif isinstance(m, nn.Linear):
                 nn.init.normal_(m.weight, 0, 0.01)
                 nn.init.constant_(m.bias, 0)
-    
+
 
 @CLS_HEADS.register('linear')
 class LinearClassificationHead(nn.Module):
@@ -97,19 +100,20 @@ class LinearClassificationHead(nn.Module):
     Returns:
         The output tensor of the classification head and the embedding tensor.
     """
+
     def __init__(self, **kwargs) -> None:
         super(LinearClassificationHead, self).__init__()
         self.embedding = nn.Linear(in_features=kwargs['fan_in'],
                                    out_features=kwargs['embedding_sz'])
         self.act = nn.ReLU()
         self.cls_head = nn.Linear(in_features=kwargs['embedding_sz'],
-                             out_features=kwargs['n_classes'])
-        
+                                  out_features=kwargs['n_classes'])
+
     def forward(self, x):
         embedding = self.embedding(x.squeeze())
         out_cls = self.cls_head(embedding)
         return out_cls, embedding
-    
+
     def init_weights(self):
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
@@ -156,6 +160,7 @@ class CombinedGlobalDescriptorClassHead(nn.Module):
         AssertionError: If `gd_config` is not a valid string specifying the global descriptor
             configuration, or if `feat_dim` is not divisible by the number of global descriptors.
     """
+
     def __init__(self,
                  **kwargs) -> None:
         super(CombinedGlobalDescriptorClassHead, self).__init__()
@@ -163,14 +168,15 @@ class CombinedGlobalDescriptorClassHead(nn.Module):
                                                    gd_config=kwargs['gd_config'],
                                                    feat_dim=kwargs['feat_dim'])
         self.bn = nn.BatchNorm2d(num_features=kwargs['fan_in'])
-        self.cls = nn.Linear(in_features=kwargs['fan_in'], out_features=kwargs['n_classes'], bias=True)
-    
+        self.cls = nn.Linear(
+            in_features=kwargs['fan_in'], out_features=kwargs['n_classes'], bias=True)
+
     def forward(self, x: torch.Tensor):
         gd, first_gd = self.gd(x)
         out = self.bn(first_gd)
         out = self.cls(out)
         return out, gd
-    
+
     def init_weights(self):
         for m in self.modules():
             if isinstance(m, nn.BatchNorm2d):
@@ -185,11 +191,11 @@ class OBSModule(ABC, nn.Module):
     @abstractmethod
     def forward(self, x):
         pass
-    
+
     @abstractmethod
     def training_step(self, *args, **kwargs):
         pass
-    
+
     @abstractmethod
     def validation_step(self, *args, **kwargs):
         pass
@@ -224,6 +230,7 @@ class ResNetDeepFashion(OBSModule):
     freeze_weights():
         Freezes the weights of the layers up to `self.resnet.fc`.
     """
+
     def __init__(self,
                  **kwargs):
         """
@@ -261,14 +268,14 @@ class ResNetDeepFashion(OBSModule):
         """
         for name, param in self.backbone.named_parameters():
             param.requires_grad = False
-            
+
     def unfreeze_weights(self):
         """
         Unfreezes the weights of the `backbone`'s layers.
         """
         for name, param in self.backbone.named_parameters():
             param.requires_grad = True
-    
+
     def configure_optimizer(self, optimizer: torch.optim.Optimizer):
         """
         Configure the optimizer used during training.
@@ -278,7 +285,7 @@ class ResNetDeepFashion(OBSModule):
 
         Returns:
             None
-            
+
         Examples:
         ```
             >>> model = ResNetDeepFashion()
@@ -287,24 +294,24 @@ class ResNetDeepFashion(OBSModule):
         ```
         """
         self.optimizer = optimizer
-        
+
     def training_step(self, x: torch.Tensor,
                       targets: torch.Tensor):
         """
             Performs a single training step on a batch of input data and targets.
-    
+
         Args:
             x (torch.Tensor): Input data tensor of shape (batch_size, num_channels, height, width).
             targets (torch.Tensor): Target tensor of shape (batch_size) containing integer class labels.
-        
+
         Returns:
             dict: A dictionary containing the training accuracy and loss for the batch.
                 - train_acc (float): The training accuracy for the batch as a percentage.
                 - train_loss (float): The training loss for the batch.
-                
+
         Raises:
             ValueError: If the `targets` tensor has more than one dimension.
-        
+
         This method first checks if the `targets` tensor has more than one dimension, and if so, it squeezes it down to one dimension.
         It then passes the input data and targets to the model to obtain logits and loss, and computes the training accuracy as the percentage of correct predictions.
         The model's optimizer is then zeroed, the loss is backpropagated through the network, and the optimizer is stepped forward.
@@ -317,16 +324,17 @@ class ResNetDeepFashion(OBSModule):
         logits_cpu = logits.to('cpu')
         targets_cpu = targets.to('cpu')
         predictions = torch.argmax(logits_cpu, dim=1)
-        train_accuracy = torch.sum(predictions == targets_cpu) / len(targets_cpu)
-        
+        train_accuracy = torch.sum(
+            predictions == targets_cpu) / len(targets_cpu)
+
         self.optimizer.zero_grad()
         loss.backward()
         self.optimizer.step()
-        
+
         return {'train_acc': train_accuracy.item(),
                 'train_loss': loss.item()}
-        
-    @torch.no_grad()    
+
+    @torch.no_grad()
     def validation_step(self, x_val: torch.Tensor,
                         targets_val: torch.Tensor):
         """
@@ -353,7 +361,7 @@ class ResNetDeepFashion(OBSModule):
         val_accuracy = torch.sum(predictions == targets_cpu) / len(targets_cpu)
         return {'val_acc': val_accuracy.item(),
                 'val_loss': val_loss}
-    
+
     def forward(self, x: torch.Tensor,
                 targets: Optional[torch.Tensor] = None) -> Tuple[torch.Tensor, torch.Tensor, Optional[torch.Tensor]]:
         """
@@ -379,17 +387,18 @@ class ResNetDeepFashion(OBSModule):
             return preds, embeddings, loss
         return preds, embeddings, loss
 
+
 @MODELS.register('FashionDetector')
 class FashionDetector(OBSModule):
     """
     Class for training, evaluating and validating a fashion object detection model.
-    
+
     Attributes:
         module (nn.Module): the object detection model.
-        
+
     Methods:
         __init__(self, **kwargs): initializes the FashionDetector instance.
-        
+
         forward(self): a placeholder function for model inference.
 
         validation_step(self, images, targets, device): performs a single validation step.
@@ -398,16 +407,17 @@ class FashionDetector(OBSModule):
 
         params(self): returns the model's trainable parameters.
     """
+
     def __init__(self, **kwargs) -> None:
         super().__init__()
         logging.debug(f'Initializing FashionDetector with kwargs: {kwargs}')
         if 'debug' in kwargs['cfg']:
             setattr(self, 'debug', kwargs['cfg']['debug'])
         self.module = build_detector(**kwargs)
-        
+
     def forward(self):
         pass
-    
+
     @torch.inference_mode()
     def validation_step(self,
                         images,
@@ -415,14 +425,14 @@ class FashionDetector(OBSModule):
                         device):
         """
         Performs a single validation step.
-        
+
         Args:
             images (list of torch.Tensor): the input images.
 
             targets (list of torch.Tensor): the ground truth targets for the given images.
-            
+
             device (str): the device to perform inference on.
-            
+
         Returns:
             res (dict): a dictionary with the model's outputs for each input image.
         """
@@ -431,13 +441,14 @@ class FashionDetector(OBSModule):
 
         if torch.cuda.is_available():
             torch.cuda.synchronize()
-        
+
         model_time = time.time()
         outputs = self.module(images)
         outputs = [{k: v.to('cpu') for k, v in t.items()} for t in outputs]
         model_time = time.time() - model_time
         logging.debug(f'Model inference time: {model_time}')
-        res = {target["image_id"].item(): output for target, output in zip(targets, outputs)}
+        res = {target["image_id"].item(): output for target,
+               output in zip(targets, outputs)}
         return res
 
     def training_step(self,
@@ -449,7 +460,7 @@ class FashionDetector(OBSModule):
                       lr_scheduler: torch.optim.lr_scheduler.LRScheduler = None):
         """
         Performs a single training step.
-        
+
         Args:
             x (torch.Tensor): the input images.
 
@@ -462,7 +473,7 @@ class FashionDetector(OBSModule):
             scaler (torch.cuda.amp.grad_scaler.GradScaler): the scaler to be used for training.
 
             lr_scheduler (torch.optim.lr_scheduler.LRScheduler): the learning rate scheduler to be used for training.
-            
+
         Returns:
             loss_dict_reduced (dict): a dictionary with the model's reduced losses over all GPUs.
         """
@@ -475,7 +486,7 @@ class FashionDetector(OBSModule):
         with torch.cuda.amp.autocast(enabled=True):
             loss_dict = self.module(images, targets)
             losses = sum(loss for loss in loss_dict.values())
-        
+
         # Reduce losses over all GPUs
         loss_dict_reduced = reduce_dict(loss_dict)
         losses_reduced = sum(loss for loss in loss_dict_reduced.values())
@@ -490,11 +501,12 @@ class FashionDetector(OBSModule):
                 self.module.eval()
                 predictions = self.module(images)
                 logging.info('Saving debug data')
-                torch.save({'x': x, 'targets': targets, 'predictions': predictions}, 'debug.pt')
+                torch.save({'x': x, 'targets': targets,
+                           'predictions': predictions}, 'debug.pt')
             logging.error(f'Loss is {loss_value}')
             logging.info(loss_dict_reduced)
             sys.exit(1)
-        
+
         optimizer.zero_grad()
         if scaler is not None:
             logging.debug('Invoking backward with scaler')
@@ -505,13 +517,12 @@ class FashionDetector(OBSModule):
             logging.debug('Invoking backward without scaler')
             losses.backward()
             optimizer.step()
-        
+
         if lr_scheduler is not None:
             lr_scheduler.step()
-        
+
         return loss_dict_reduced
 
     @property
     def params(self):
         return [p for p in self.module.parameters() if p.requires_grad]
-    
