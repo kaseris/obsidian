@@ -1,0 +1,3 @@
+notebooks/*.ipynb linguist-vendored
+notebooks/*.ipynb  text
+notebooks/*.ipynb linguist-documentation
