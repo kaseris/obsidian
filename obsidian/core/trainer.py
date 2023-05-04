@@ -10,10 +10,10 @@ import torch.nn as nn
 import torch.utils.data as data
 import torch.optim as optim
 
-from core.callbacks import CallbackList, Callback
-from blocks.classification.model import OBSModule
-from core.registry import Registry
-from trackers import ExperimentTracker
+from obsidian.core.callbacks import CallbackList, Callback
+from obsidian.blocks.classification.model import OBSModule
+from obsidian.core.registry import Registry
+from obsidian.core.trackers import ExperimentTracker
 
 TRAINERS = Registry()
 

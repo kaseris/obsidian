@@ -5,7 +5,6 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torchvision.models.detection as detection
 
-from obsidian.datasets.dataset import DATASETS
 from obsidian.core.registry import Registry
 
 DETECTORS = Registry()

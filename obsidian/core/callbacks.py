@@ -3,11 +3,11 @@ from abc import ABC, abstractmethod
 import torch.nn as nn
 import torch.utils.data
 
-from coco.coco_eval import CocoEvaluator
-from coco.coco_utils import get_coco_api_from_dataset
-from coco.engine import _get_iou_types
+from obsidian.coco.coco_eval import CocoEvaluator
+from obsidian.coco.coco_utils import get_coco_api_from_dataset
+from obsidian.coco.engine import _get_iou_types
 
-from core.registry import Registry
+from obsidian.core.registry import Registry
 
 
 CALLBACKS = Registry()

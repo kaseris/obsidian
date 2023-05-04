@@ -13,9 +13,7 @@ from PIL import Image, ImageDraw
 from torch.utils.data import Dataset
 from torchvision import transforms
 
-from obsidian.core.registry import Registry
-
-DATASETS = Registry()
+from .registry_ import DATASETS
 
 
 @DATASETS.register('deepfashion_cat_att')

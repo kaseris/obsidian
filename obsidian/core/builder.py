@@ -13,14 +13,13 @@ import torch.nn as nn
 from torch.utils.data import DataLoader
 import torch.optim as optim
 
-from datasets.dataset import DATASETS, TRANSFORMS
-from blocks.detection.detection import DETECTORS
-from core.fileclient import read_file
-from blocks.losses.losses import LOSSES
-from blocks.classification.model import MODELS
-from core.trackers import TRACKERS
-from core.trainer import TRAINERS, Trainer
-from obsidian.core.utils import prepare_data, import_registry
+from .fileclient import read_file
+from .trackers import TRACKERS
+from .trainer import Trainer, TRAINERS
+
+from ..blocks.classification.model import MODELS
+from ..datasets.dataset import DATASETS
+from ..datasets.transforms import TRANSFORMS
 
 
 _FLAG_FIRST = object()

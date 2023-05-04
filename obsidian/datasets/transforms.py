@@ -2,9 +2,7 @@ import torch
 import torchvision.transforms as transforms
 
 from obsidian.coco import transforms as T
-from obsidian.core.registry import Registry
-
-TRANSFORMS = Registry()
+from .registry_ import TRANSFORMS
 
 
 @TRANSFORMS.register('DeepFashionObjectDetectionDefaultTransform')

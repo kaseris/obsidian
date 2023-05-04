@@ -4,7 +4,7 @@ from abc import ABC, abstractmethod
 import logging
 import torch.nn as nn
 
-from core.registry import Registry
+from ..core.registry import Registry
 
 TRACKERS = Registry()
 

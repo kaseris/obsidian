@@ -12,7 +12,7 @@ import torchvision.models as models
 
 from obsidian.coco.coco_eval import CocoEvaluator
 from obsidian.coco.utils import reduce_dict
-from obsidian.blocks.detection.detection import build_detector
+
 from obsidian.blocks.pooling.pooling import DESCRIPTORS, POOLING
 from obsidian.core.registry import Registry
 
@@ -412,7 +412,7 @@ class FashionDetector(OBSModule):
         logging.debug(f'Initializing FashionDetector with kwargs: {kwargs}')
         if 'debug' in kwargs['cfg']:
             setattr(self, 'debug', kwargs['cfg']['debug'])
-        self.module = build_detector(**kwargs)
+        self.module = kwargs['detector']
 
     def forward(self):
         pass
