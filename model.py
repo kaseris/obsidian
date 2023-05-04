@@ -523,6 +523,42 @@ class FashionDetector(OBSModule):
 
         return loss_dict_reduced
 
+    def freeze_layers(self, layer):
+        """
+        Freezes all layers up to and including the specified layer of a PyTorch model.
+
+        Args:
+            layer (int or str): The index or name of the layer up to which to freeze the layers.
+
+        Returns:
+            - trainable_params (generator): A generator that yields the trainable parameters of the frozen network.
+        """
+        if isinstance(layer, int):
+            # Layer is an integer representing the index up to which to freeze the layers
+            layer_index = layer
+        elif isinstance(layer, str):
+            # Layer is a string representing the name of the layer up to which to freeze the layers
+            layer_index = None
+            for i, (name, module) in enumerate(self.module.named_modules()):
+                if name == layer:
+                    layer_index = i
+                    break
+            if layer_index is None:
+                raise ValueError(f"Layer '{layer}' not found in model")
+        else:
+            raise ValueError("Layer must be an integer or a string")
+
+        # Set the requires_grad attribute of all layers up to layer_index to False
+        for i, param in enumerate(self.module.parameters()):
+            if i <= layer_index:
+                param.requires_grad = False
+
+        # Return the trainable parameters of the frozen network
+        trainable_params = filter(
+            lambda p: p.requires_grad, self.module.parameters())
+
+        return trainable_params
+
     @property
     def params(self):
         return [p for p in self.module.parameters() if p.requires_grad]
