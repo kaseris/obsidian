@@ -10,9 +10,9 @@ import torch.nn.functional as F
 import torchvision
 import torchvision.models as models
 
+import obsidian.module as module
 from obsidian.coco.coco_eval import CocoEvaluator
 from obsidian.coco.utils import reduce_dict
-
 from obsidian.blocks.pooling.pooling import DESCRIPTORS, POOLING
 from obsidian.core.registry import Registry
 
@@ -186,22 +186,8 @@ class CombinedGlobalDescriptorClassHead(nn.Module):
                 nn.init.constant_(m.bias, 0)
 
 
-class OBSModule(ABC, nn.Module):
-    @abstractmethod
-    def forward(self, x):
-        pass
-
-    @abstractmethod
-    def training_step(self, *args, **kwargs):
-        pass
-
-    @abstractmethod
-    def validation_step(self, *args, **kwargs):
-        pass
-
-
 @MODELS.register('ResNetDeepFashion')
-class ResNetDeepFashion(OBSModule):
+class ResNetDeepFashion(module.OBSModule):
     """
     A class that defines the ResNetDeepFashion model.
 
@@ -388,7 +374,7 @@ class ResNetDeepFashion(OBSModule):
 
 
 @MODELS.register('FashionDetector')
-class FashionDetector(OBSModule):
+class FashionDetector(module.OBSModule):
     """
     Class for training, evaluating and validating a fashion object detection model.
 
