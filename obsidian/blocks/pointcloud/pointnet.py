@@ -1,13 +1,28 @@
 import torch
 import torch.nn as nn
-import torch.functional as F
+import torch.nn.functional as F
 
+
+from pytorch_metric_learning import samplers, miners, losses, distances, reducers
+import obsidian.module as om
 from .stn import STN3d, STNkd
 
 
-class PointNetfeat(nn.Module):
-    def __init__(self, global_feat=True, feature_transform=False):
+class PointNetfeat(om.OBSModule):
+    def __init__(self, global_feat=True, feature_transform=False,
+                 miner: miners.BaseMiner = None,
+                 reducer: reducers.BaseReducer = None,
+                 distance: distances.BaseDistance = None,
+                 triplet_loss: losses.BaseMetricLossFunction = None,
+                 feature_transform_lambda: float = 0.001
+                 ):
         super(PointNetfeat, self).__init__()
+
+        self.miner = miner
+        self.reducer = reducer
+        self.distance = distance
+        self.triplet_loss = triplet_loss
+
         self.stn = STN3d()
         self.conv1 = torch.nn.Conv1d(3, 64, 1)
         self.conv2 = torch.nn.Conv1d(64, 128, 1)
@@ -47,8 +62,36 @@ class PointNetfeat(nn.Module):
             x = x.view(-1, 1024, 1).repeat(1, 1, n_pts)
             return torch.cat([x, pointfeat], 1), trans, trans_feat
 
+    def training_step(self, x: torch.Tensor,
+                      targets: torch.Tensor,
+                      device,
+                      optimizer: torch.optim.Optimizer,
+                      scaler: torch.cuda.amp.grad_scaler.GradScaler,
+                      lr_scheduler: torch.optim.lr_scheduler.LRScheduler):
+        self.train()
+        x = x.to(device)
+        targets = targets.to(device)
+        x = x.transpose(2, 1)
+        optimizer.zero_grad()
+        with torch.cuda.amp.autocast(enabled=True):
+            predictions, trans, trans_feat, global_feat = self(x)
+        pairs = self.miner(global_feat, targets)
+        loss_cls = F.nll_loss(predictions, targets)
+        tr_loss = self.triplet_loss(global_feat, targets, pairs)
+        if self.feature_transform:
+            feature_tf_loss = feature_transform_regularizer(
+                trans_feat) * self.feature_transform_lambda
+            loss_cls += feature_tf_loss
 
-class PointNetCls(nn.Module):
+        net_loss = loss_cls + tr_loss
+        net_loss.backward()
+        optimizer.step()
+
+    def validation_step(self, *args, **kwargs):
+        pass
+
+
+class PointNetCls(om.OBSModule):
     def __init__(self, k=2, feature_transform=False):
         super(PointNetCls, self).__init__()
         self.feature_transform = feature_transform
@@ -71,7 +114,7 @@ class PointNetCls(nn.Module):
         return F.log_softmax(x, dim=1), trans, trans_feat, glob_feature
 
 
-class PointNetDenseCls(nn.Module):
+class PointNetDenseCls(om.OBSModule):
     def __init__(self, k=2, feature_transform=False):
         super(PointNetDenseCls, self).__init__()
         self.k = k
