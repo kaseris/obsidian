@@ -6,3 +6,4 @@ scipy
 torchvision
 Pillow
 nltk
+pytest
