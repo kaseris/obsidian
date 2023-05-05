@@ -14,3 +14,8 @@ def test_imports():
     import obsidian.datasets.dataset
     import obsidian.datasets.transforms
     assert True
+
+
+def test_import_pycocotools():
+    import pycocotools
+    assert True
