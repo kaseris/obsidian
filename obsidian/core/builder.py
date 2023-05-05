@@ -18,8 +18,8 @@ from .trackers import TRACKERS
 from .trainer import Trainer, TRAINERS
 
 from ..blocks.classification.model import MODELS
-from ..datasets.dataset import DATASETS
-from ..datasets.transforms import TRANSFORMS
+from obsidian.datasets.registry_ import DATASETS
+from obsidian.datasets.registry_ import TRANSFORMS
 
 
 _FLAG_FIRST = object()
