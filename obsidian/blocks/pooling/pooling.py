@@ -5,10 +5,7 @@ import torch.nn.functional as F
 
 import torchvision.ops as ops
 
-from obsidian.core.registry import Registry
-
-POOLING = Registry()
-DESCRIPTORS = Registry()
+from obsidian.blocks.pooling.registry_ import POOLING, DESCRIPTORS
 
 
 @POOLING.register('landmark_pooling')
