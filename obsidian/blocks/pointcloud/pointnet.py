@@ -70,9 +70,10 @@ class PointNetfeat(om.OBSModule):
                       lr_scheduler: torch.optim.lr_scheduler.LRScheduler):
         self.train()
         x = x.to(device)
+        targets = targets[:, 0]
         targets = targets.to(device)
         x = x.transpose(2, 1)
-        optimizer.zero_grad()
+
         with torch.cuda.amp.autocast(enabled=True):
             predictions, trans, trans_feat, global_feat = self(x)
         pairs = self.miner(global_feat, targets)
@@ -84,16 +85,72 @@ class PointNetfeat(om.OBSModule):
             loss_cls += feature_tf_loss
 
         net_loss = loss_cls + tr_loss
-        net_loss.backward()
-        optimizer.step()
+        optimizer.zero_grad()
+        if scaler is not None:
+            scaler.scale(net_loss).backward()
+            scaler.step(optimizer)
+            scaler.update()
+        else:
+            net_loss.backward()
+            optimizer.step()
 
-    def validation_step(self, *args, **kwargs):
-        pass
+        if lr_scheduler is not None:
+            lr_scheduler.step()
+
+        # Calculate the accuracy of predictions
+        _, predictions = predictions.max(1)
+        accuracy = (predictions == targets).sum().item() / targets.size(0)
+
+        return_dict = {'total loss': net_loss.item(),
+                       'loss_cls': loss_cls.item(),
+                       'loss_tr': tr_loss.item(),
+                       'accuracy': accuracy}
+
+        return return_dict
+
+    @torch.no_grad()
+    def validation_step(self,
+                        x: torch.Tensor,
+                        targets: torch.Tensor,
+                        device):
+        self.eval()
+        x = x.to(device=device)
+        targets = targets.to(device=device)
+        targets = targets[:, 0]
+        x = x.transpose(2, 1)
+
+        preds, _, _, _ = self(x)
+        loss_cls = F.nll_loss(preds, targets)
+
+        # Calculate the accuracy of predictions
+        _, predictions = preds.max(1)
+        accuracy = (predictions == targets).sum().item() / targets.size(0)
+        return_dict = {'total loss': loss_cls.item(),
+                       'accuracy': accuracy}
+        return return_dict
+
+    @property
+    def params(self):
+        return filter(lambda p: p.requires_grad, self.parameters())
 
 
 class PointNetCls(om.OBSModule):
-    def __init__(self, k=2, feature_transform=False):
+    def __init__(self, k=2, feature_transform=False,
+                 miner: miners.BaseMiner = None,
+                 reducer: reducers.BaseReducer = None,
+                 distance: distances.BaseDistance = None,
+                 triplet_loss: losses.BaseMetricLossFunction = None,
+                 feature_transform_lambda: float = 0.001
+                 ):
         super(PointNetCls, self).__init__()
+
+        self.miner = miner
+        self.reducer = reducer
+        self.distance = distance
+        self.triplet_loss = triplet_loss
+
+        self.feature_transform_lambda = feature_transform_lambda
+
         self.feature_transform = feature_transform
         self.feat = PointNetfeat(
             global_feat=True, feature_transform=feature_transform)
@@ -112,6 +169,78 @@ class PointNetCls(om.OBSModule):
         x = F.relu(self.bn2(self.dropout(self.fc2(x))))
         x = self.fc3(x)
         return F.log_softmax(x, dim=1), trans, trans_feat, glob_feature
+
+    def training_step(self, x: torch.Tensor,
+                      targets: torch.Tensor,
+                      device,
+                      optimizer: torch.optim.Optimizer,
+                      scaler: torch.cuda.amp.grad_scaler.GradScaler,
+                      lr_scheduler: torch.optim.lr_scheduler.LRScheduler):
+        self.train()
+        x = x.to(device)
+        targets = targets[:, 0]
+        targets = targets.to(device)
+        x = x.transpose(2, 1)
+
+        with torch.cuda.amp.autocast(enabled=True):
+            predictions, trans, trans_feat, global_feat = self(x)
+        pairs = self.miner(global_feat, targets)
+        loss_cls = F.nll_loss(predictions, targets)
+        self.triplet_loss = self.triplet_loss.to(device)
+        tr_loss = self.triplet_loss(global_feat, targets, pairs)
+        if self.feature_transform:
+            feature_tf_loss = feature_transform_regularizer(
+                trans_feat) * self.feature_transform_lambda
+            loss_cls += feature_tf_loss
+
+        net_loss = loss_cls + tr_loss
+        optimizer.zero_grad()
+        if scaler is not None:
+            scaler.scale(net_loss).backward()
+            scaler.step(optimizer)
+            scaler.update()
+        else:
+            net_loss.backward()
+            optimizer.step()
+
+        if lr_scheduler is not None:
+            lr_scheduler.step()
+
+        # Calculate the accuracy of predictions
+        _, predictions = predictions.max(1)
+        accuracy = (predictions == targets).sum().item() / targets.size(0)
+
+        return_dict = {'total loss': net_loss.item(),
+                       'loss_cls': loss_cls.item(),
+                       'loss_tr': tr_loss.item(),
+                       'accuracy': accuracy}
+
+        return return_dict
+
+    @torch.no_grad()
+    def validation_step(self,
+                        x: torch.Tensor,
+                        targets: torch.Tensor,
+                        device):
+        self.eval()
+        x = x.to(device=device)
+        targets = targets.to(device=device)
+        targets = targets[:, 0]
+        x = x.transpose(2, 1)
+
+        preds, _, _, _ = self(x)
+        loss_cls = F.nll_loss(preds, targets)
+
+        # Calculate the accuracy of predictions
+        _, predictions = preds.max(1)
+        accuracy = (predictions == targets).sum().item() / targets.size(0)
+        return_dict = {'total loss': loss_cls.item(),
+                       'accuracy': accuracy}
+        return return_dict
+
+    @property
+    def params(self):
+        return filter(lambda p: p.requires_grad, self.parameters())
 
 
 class PointNetDenseCls(om.OBSModule):
