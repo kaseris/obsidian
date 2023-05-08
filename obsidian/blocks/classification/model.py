@@ -13,7 +13,6 @@ import torchvision.models as models
 import obsidian.module as module
 from obsidian.coco.coco_eval import CocoEvaluator
 from obsidian.coco.utils import reduce_dict
-from obsidian.blocks.pooling.pooling import DESCRIPTORS, POOLING
 from obsidian.core.registry import Registry
 from obsidian.blocks.classification.registry_ import BACKBONES, CLS_HEADS, MODELS
 
@@ -159,9 +158,7 @@ class CombinedGlobalDescriptorClassHead(nn.Module):
     def __init__(self,
                  **kwargs) -> None:
         super(CombinedGlobalDescriptorClassHead, self).__init__()
-        self.gd = DESCRIPTORS['config_descriptor'](fan_in=kwargs['fan_in'],
-                                                   gd_config=kwargs['gd_config'],
-                                                   feat_dim=kwargs['feat_dim'])
+        self.gd = kwargs['gd']
         self.bn = nn.BatchNorm2d(num_features=kwargs['fan_in'])
         self.cls = nn.Linear(
             in_features=kwargs['fan_in'], out_features=kwargs['n_classes'], bias=True)
