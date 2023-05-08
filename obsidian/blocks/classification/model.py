@@ -15,11 +15,7 @@ from obsidian.coco.coco_eval import CocoEvaluator
 from obsidian.coco.utils import reduce_dict
 from obsidian.blocks.pooling.pooling import DESCRIPTORS, POOLING
 from obsidian.core.registry import Registry
-
-
-BACKBONES = Registry()
-MODELS = Registry()
-CLS_HEADS = Registry()
+from obsidian.blocks.classification.registry_ import BACKBONES, CLS_HEADS, MODELS
 
 
 @BACKBONES.register('resnet_18')
