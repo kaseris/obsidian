@@ -11,7 +11,7 @@ import torch.utils.data as data
 import torch.optim as optim
 
 from obsidian.core.callbacks import CallbackList, Callback
-from obsidian.blocks.classification.model import OBSModule
+from obsidian.module import OBSModule
 from obsidian.core.registry import Registry
 from obsidian.core.trackers import ExperimentTracker
 
