@@ -5,12 +5,8 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torchvision.models.detection as detection
 
-from obsidian.core.registry import Registry
+from obsidian.blocks.detection.registry_ import DETECTORS, BACKBONES, DETECTOR_WEIGHTS, BACKBONE_WEIGHTS
 
-DETECTORS = Registry()
-DETECTOR_WEIGHTS = Registry()
-BACKBONES = Registry()
-BACKBONE_WEIGHTS = Registry()
 
 for member, obj in inspect.getmembers(sys.modules['torchvision.models.detection']):
     if member in ['Tensor', 'Module']:
