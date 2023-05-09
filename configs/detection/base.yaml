@@ -1,4 +1,4 @@
-task: detection
+task: image_detection
 dataset_train:
   name: deepfashion2
   cfg:
@@ -34,19 +34,19 @@ optimizer:
     betas: [0.9, 0.999]
     eps: 0.00000001
 train_loader:
-  type: DataLoader,
+  name: DataLoader,
   loader_cfg: 
     batch_size: 2
     sampler: null
     shuffle: true
 val_loader:
-  type: DataLoader,
+  name: DataLoader,
   loader_cfg: 
     batch_size: 1
     sampler: null
     shuffle: true
 trainer: 
-  type: simple-trainer
+  name: simple-trainer
   trainer_cfg:
     n_epochs: 10
     tracker: wandb
