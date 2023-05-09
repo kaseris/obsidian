@@ -1,4 +1,4 @@
-import pprint
+import logging
 import obsidian.module as om
 import obsidian.blocks as blocks
 from obsidian.core.fileclient import read_file
@@ -14,7 +14,6 @@ def _build_image_classifier(model_cfg):
 
 def _build_image_detector(model_cfg):
     registry = blocks.DETECTORS
-    print(model_cfg.name, model_cfg.args)
     model = registry[model_cfg.name](**model_cfg.args)
     model = registry['FashionDetector'](**{'detector': model})
     return model
@@ -44,13 +43,17 @@ class ConfigBuilder:
         # Can't afford to throw in garbage.
         self._configs = self.configuration.keys()
         self.build_fn = None
-        self.build_componenents()
+        self.build_components()
 
-    def build_componenents(self):
-        task = self.configuration['task']
+    def build_components(self):
+        task = self.configuration.pop('task')
+        logging.debug(f'Building model for {task} task')
         self.build_fn = task2builder[task]
-        model = self.build_fn(Config(self.configuration['model']))
+        model_cfg = self.configuration.pop('model')
+        model = self.build_fn(Config(model_cfg))
         setattr(self, 'model', model)
+        for cfg in self._configs:
+            logging.info(f'Building component {cfg}')
 
     @property
     def configs(self):
@@ -73,7 +76,5 @@ class ConfigBuilder:
 
 
 if __name__ == '__main__':
+    logging.basicConfig(level=logging.INFO)
     config_builder = ConfigBuilder('configs/detection/base.yaml')
-    # print(config_builder)
-    print(config_builder.model)
-    print(isinstance(config_builder.model, om.OBSModule))
