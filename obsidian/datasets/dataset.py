@@ -294,8 +294,8 @@ class DeepFashion2(Dataset):
             target dict, and returns a transformed version of them. Default: None.
 
     Attributes:
-`        `root` (`str`): The root directory of the dataset.
-`        `split` (`str`): The dataset split being used.
+        `root` (`str`): The root directory of the dataset.
+        `split` (`str`): The dataset split being used.
         `transforms` (`callable`): The transform function being used, if any.
         `imgs` (`list`): A list of the paths to the images in the dataset split.
         `annos` (`list`): A list of the paths to the annotations in the dataset split.
