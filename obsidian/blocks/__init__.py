@@ -21,12 +21,12 @@ from .classification.model import ClassificationHead as ClassificationHead
 from .classification.model import LinearClassificationHead as LinearClassificationHead
 from .classification.model import CombinedGlobalDescriptorClassHead as CombinedGlobalDescriptorClassHead
 from .classification.model import ResNetDeepFashion as ResNetDeepFashion
-from .classification.model import FashionDetector as FashionDetector
 
 from .detection.registry_ import DETECTORS as DETECTORS
 from .detection.registry_ import DETECTOR_WEIGHTS as DETECTOR_WEIGHTS
 from .detection.registry_ import BACKBONES as DETECTOR_BACKBONES
 from .detection.registry_ import BACKBONE_WEIGHTS as DETECTOR_BACKBONE_WEIGHTS
+from .detection.detection import FashionDetector as FashionDetector
 
 from .pooling.registry_ import POOLING as POOLING
 from .pooling.registry_ import DESCRIPTORS as DESCRIPTORS
