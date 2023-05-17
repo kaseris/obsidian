@@ -12,6 +12,18 @@ def _build_image_classifier(model_cfg):
     pass
 
 
+def _build_dataset(model_cfg):
+    pass
+
+
+def _build_optimizer(model_cfg):
+    pass
+
+
+def _build_loader(model_cfg):
+    pass
+
+
 def _build_image_detector(model_cfg):
     registry = blocks.DETECTORS
     model = registry[model_cfg.name](**model_cfg.args)
@@ -22,7 +34,9 @@ def _build_image_detector(model_cfg):
 task2builder = {
     'pointcloud_classification': _build_pointcloud_classifier,
     'image_classification': _build_image_classifier,
-    'image_detection': _build_image_detector
+    'image_detection': _build_image_detector,
+    'dataset': _build_dataset,
+    'optimizer': _build_optimizer
 }
 
 
@@ -36,9 +50,16 @@ class Config:
 
 
 class ConfigBuilder:
+
+    __CFG_BUILDER_REQUIRED_ARGS = ['task', 'model',
+                                   'dataset_train',
+                                   'optimizer',
+                                   'train_loader']
+
     def __init__(self, cfg_filename: str) -> None:
         self.cfg_filename = cfg_filename
         self.configuration = read_file(cfg_filename)
+        self._check_config_keys()
         # TODO: Must perform a structure check of the configuration.
         # Can't afford to throw in garbage.
         self._configs = self.configuration.keys()
@@ -73,6 +94,11 @@ class ConfigBuilder:
         config_str += "\n"
         config_str += f"build_fn:  {self.build_fn}"
         return config_str
+
+    def _check_config_keys(self):
+        for key in self.__CFG_BUILDER_REQUIRED_ARGS:
+            if key not in self.configuration.keys():
+                raise ValueError(f"Missing required key: `{key}`")
 
 
 if __name__ == '__main__':
