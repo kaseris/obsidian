@@ -35,3 +35,5 @@ from .pooling.pooling import GlobalPooling as GlobalPooling
 from .pooling.pooling import RoIPooling as RoIPooling
 from .pooling.pooling import GlobalDescriptor as GlobalDescriptor
 from .pooling.pooling import CombinedGlobalDescriptor as CombinedGlobalDescriptor
+
+from .optimizers import OPTIMIZERS as OPTIMIZERS
