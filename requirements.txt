@@ -6,4 +6,5 @@ scipy
 torchvision
 Pillow
 nltk
+pytorch_metric_learning
 pytest
