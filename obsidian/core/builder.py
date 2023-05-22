@@ -16,8 +16,9 @@ def _build_dataset(model_cfg):
     pass
 
 
-def _build_optimizer(model_cfg):
-    pass
+def _build_optimizer(opt_cfg):
+    from obsidian.blocks import optimizers
+    return optimizers.get_optimizer(opt_cfg)
 
 
 def _build_loader(model_cfg):
