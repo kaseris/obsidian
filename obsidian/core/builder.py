@@ -65,9 +65,9 @@ class ConfigBuilder:
         # Can't afford to throw in garbage.
         self._configs = self.configuration.keys()
         self.build_fn = None
-        self.build_components()
+        self._build_components()
 
-    def build_components(self):
+    def _build_components(self):
         task = self.configuration.pop('task')
         logging.debug(f'Building model for {task} task')
         self.build_fn = task2builder[task]
